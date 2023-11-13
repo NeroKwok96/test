@@ -1,181 +1,116 @@
-from pathlib import Path
-from matplotlib import pyplot as plt
-from utils.dataloader import load_sensor_vel_freq
-from models.low_vel_gan import LowVelGAN
-from datetime import datetime
-from utils.logger import logger
-
-import tensorflow as tf
 import numpy as np
 import pandas as pd
-import argparse
-import os
+import matplotlib.pyplot as plt
+import scipy.linalg as linalg
+from scipy.signal import convolve
+
+# C++ translated code
+dt = 1 / 25600
+acc_df = pd.read_csv('189249000_20231101_035855_acc_time.csv')
+vel_df = pd.read_csv('189249000_20231101_035855_vel_time.csv')
+acc_arr = acc_df[['vertical', 'horizontal', 'axial']].to_numpy()
+vel_arr = vel_df['vertical'].to_numpy()
+v2_predicted_arr = np.zeros((25600, 3))
+v1 = 0
+for i in range(len(acc_arr) - 1):
+    a1 = acc_arr[i]
+    a2 = acc_arr[i+1] if i < len(acc_arr) - 1 else a1  # Handle the last element case
+    delta_acc = (a1 + a2) * 9.81 * 1000
+    v2_predicted = v1 + (0.5 * delta_acc * dt)
+    v2_predicted_arr[i+1] = v2_predicted  # Start from index 1
+    v1 = v2_predicted
+# v2_predicted_arr = v2_predicted_arr[:25600]  # Trim the array to desired size
+
+def find_autocorrelation_value(input_data, p):
+    coeff = np.zeros(input_data.shape[1])
+    # print("coeff: ", coeff)
+    for cnt_col in range(input_data.shape[1]):
+        # print(cnt_col)
+        if p >= 0:
+            for n in range(p, input_data.shape[0]):
+                coeff[cnt_col] += input_data[n, cnt_col] * input_data[n - p, cnt_col]
+        else:
+            for n in range(0, input_data.shape[0] + p):
+                coeff[cnt_col] += input_data[n, cnt_col] * input_data[n - p, cnt_col]
+    # print("coeff: ", coeff)
+    return coeff / input_data.shape[0]
+
+# p = 3
+# coefficients = find_autocorrelation_value(v2_predicted_arr, 500)
+# print("Autocorrelation coefficients:", coefficients)
+def find_ar_yule_coefficients(input_data, filter_order):
+    yule_matrix_list = []
+    yule_vector_list = []
+    yule_coeff = np.zeros((filter_order, input_data.shape[1]))
+
+    for _ in range(input_data.shape[1]):
+        yule_matrix = np.zeros((filter_order, filter_order))
+        yule_vector = np.zeros(filter_order)
+        yule_matrix_list.append(yule_matrix)
+        yule_vector_list.append(yule_vector)
+
+    for cnt_col in range(filter_order):
+        for cnt_row in range(cnt_col, filter_order):
+            diff = cnt_row - cnt_col
+            coeff = find_autocorrelation_value(input_data, diff)
+            for cnt_channel in range(input_data.shape[1]):
+                yule_matrix_list[cnt_channel][cnt_row, cnt_col] = coeff[cnt_channel]
+                yule_matrix_list[cnt_channel][cnt_col, cnt_row] = coeff[cnt_channel]
+
+    for cnt_row in range(filter_order):
+        rhs_coeff = find_autocorrelation_value(input_data, cnt_row + 1)
+        for cnt_channel in range(input_data.shape[1]):
+            yule_vector_list[cnt_channel][cnt_row] = rhs_coeff[cnt_channel]
+
+    for cnt_channel in range(input_data.shape[1]):
+        a = linalg.solve(-yule_matrix_list[cnt_channel], yule_vector_list[cnt_channel])
+        for cnt_row in range(a.shape[0]):
+            yule_coeff[cnt_row, cnt_channel] = a[cnt_row]
+
+    return yule_coeff
+def apply_filter_on_data(input_data, filter_order):
+    yule_coeff = find_ar_yule_coefficients(input_data, filter_order)
+    filtered_data = np.zeros_like(input_data)
+    # print("yule_coeff: ", yule_coeff)
+    if input_data.shape[0] > 0 and input_data.shape[1] > 0:
+        filtered_data[:, 0] = convolve(input_data[:, 0], yule_coeff[:, 0], mode='same')
+        for cnt_col in range(1, input_data.shape[1]):
+            filtered_data[:, cnt_col] = convolve(input_data[:, cnt_col], yule_coeff[:, cnt_col], mode='same')
+    return filtered_data
 
 
-def get_threshold(model: LowVelGAN, filter: float):
-    normal_dataset, _, _, _ = load_sensor_vel_freq(
-        "data/vel", selected_row_num=400, unsatisfactory=filter
-    )
+filtered_data = apply_filter_on_data(v2_predicted_arr, 10)
 
-    normal_temp_dataset = tf.expand_dims(normal_dataset, axis=-1)
-    _, normal_recon = model.generator(normal_temp_dataset)
-    reconstruction_scores = tf.keras.losses.mae(
-        tf.reshape(normal_recon, [len(normal_recon), -1]),
-        tf.reshape(normal_temp_dataset, [len(normal_temp_dataset), -1]),
-    )
-
-    threshold = {}
-    mean = np.mean(reconstruction_scores)
-    std = np.std(reconstruction_scores)
-    threshold["good"] = mean + 2 * std
-    threshold["usable"] = mean + 5 * std
-    threshold["unsatisfactory"] = mean + 9 * std
-
-    logger.info(f"{np.mean(reconstruction_scores)=}")
-    logger.info(f"{np.std(reconstruction_scores)=}")
-    logger.info(f"{threshold=}")
-
-    return threshold
+from numpy.polynomial import Polynomial
 
 
-def plot_data(model, dataset, filepath):
-    sample_size = 4
-    fig, axs = plt.subplots(sample_size, 2, figsize=(50, 30))
-    rand_sample_idx = np.random.choice(len(dataset), size=sample_size)
-    dataset = dataset[rand_sample_idx]
-    for i, test_input in enumerate(dataset):
-        test_input = test_input.reshape(1, *test_input.shape, 1)
-        _, pred = model.generator(test_input, training=False)
-        pred = pred.numpy()
+def remove_trend_from_data(input_data, order):
+    detrended_data = np.empty_like(input_data)
+    number_of_elements = input_data.shape[0]
 
-        for j in range(2):
-            axs[i, j].plot(pred.reshape(-1, 4)[:, j * 2], label="pred")
-            axs[i, j].plot(test_input.reshape(-1, 4)[:, j * 2], label="ground")
-            axs[i, j].legend(loc="upper right")
-
-    fig.savefig(filepath)
-
-
-def evaluate(args: argparse.Namespace):
-    normal_dataset, abnormal_dataset, meta_normal, meta_abnormal = load_sensor_vel_freq(
-        "data/vel",
-        selected_row_num=400,
-        unsatisfactory=args.fail,
-        select_year=args.select_year,
-    )
-
-    logger.info("Imported dataset")
-    logger.info(f"{normal_dataset.shape=}")
-    logger.info(f"{meta_normal.shape=}")
-    logger.info(f"{abnormal_dataset.shape=}")
-    logger.info(f"{meta_abnormal.shape=}")
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_directory = os.path.join("out", "evaluate", timestamp)
-    Path(out_directory).mkdir(parents=True, exist_ok=True)
-
-    meta_normal.to_csv(os.path.join(out_directory, "meta_normal.csv"))
-    meta_abnormal.to_csv(os.path.join(out_directory, "meta_abnormal.csv"))
-
-    model = LowVelGAN()
-    model.load_weights(
-        input_shape=(None, 400, 4, 1), save_dir=f"out/models/{args.model}"
-    )
-
-    plot_data(model, normal_dataset, os.path.join(out_directory, "normal.png"))
-    plot_data(model, abnormal_dataset, os.path.join(out_directory, "abnormal.png"))
-
-    # Define the threshold
-    thresholds = get_threshold(model, args.threshold)
-
-    # Create CSV file for reporting
-    df = pd.DataFrame()
-
-    # Evaluate with threshold
-    normal_temp_dataset = tf.expand_dims(normal_dataset, axis=-1)
-    _, normal_recon = model.generator(normal_temp_dataset)
-    reconstruction_scores = tf.keras.losses.mae(
-        tf.reshape(normal_recon, [len(normal_recon), -1]),
-        tf.reshape(normal_temp_dataset, [len(normal_temp_dataset), -1]),
-    )
-    good = tf.cast(tf.math.less(reconstruction_scores, thresholds["good"]), tf.uint8)
-    usable = tf.cast(
-        tf.math.greater_equal(reconstruction_scores, thresholds["good"]),
-        tf.uint8,
-    )
-    unsatisfactory = tf.cast(
-        tf.math.greater_equal(reconstruction_scores, thresholds["usable"]),
-        tf.uint8,
-    )
-    un_usable = tf.cast(
-        tf.math.greater_equal(reconstruction_scores, thresholds["unsatisfactory"]),
-        tf.uint8,
-    )
-    meta_normal["Abnormal (Formula)"] = 0
-    meta_normal["Good (Model)"] = good
-    meta_normal["Usable (Model)"] = usable
-    meta_normal["Unsatisfactory (Model)"] = unsatisfactory
-    meta_normal["Un-usable (Model)"] = un_usable
-    meta_normal["Match"] = 0 == usable
-    df = pd.concat([df, meta_normal])
-
-    if len(meta_abnormal) > 0:
-        abnormal_temp_dataset = abnormal_dataset
-        abnormal_temp_dataset = tf.expand_dims(abnormal_temp_dataset, axis=-1)
-        _, abnormal_temp_recon = model.generator(abnormal_temp_dataset)
-        abnormal_temp_loss = tf.keras.losses.mae(
-            tf.reshape(abnormal_temp_recon, [len(abnormal_temp_recon), -1]),
-            tf.reshape(abnormal_temp_dataset, [len(abnormal_temp_dataset), -1]),
-        )
-        good = tf.cast(tf.math.less(abnormal_temp_loss, thresholds["good"]), tf.uint8)
-        usable = tf.cast(
-            tf.math.greater_equal(abnormal_temp_loss, thresholds["good"]),
-            tf.uint8,
-        )
-        unsatisfactory = tf.cast(
-            tf.math.greater_equal(abnormal_temp_loss, thresholds["usable"]),
-            tf.uint8,
-        )
-        un_usable = tf.cast(
-            tf.math.greater_equal(abnormal_temp_loss, thresholds["unsatisfactory"]),
-            tf.uint8,
-        )
-        meta_abnormal["Abnormal (Formula)"] = 1
-        meta_abnormal["Good (Model)"] = good
-        meta_abnormal["Usable (Model)"] = usable
-        meta_abnormal["Unsatisfactory (Model)"] = unsatisfactory
-        meta_abnormal["Un-usable (Model)"] = un_usable
-        meta_abnormal["Match"] = np.any([usable, unsatisfactory, un_usable], axis=0)
-        df = pd.concat([df, meta_abnormal])
+    if number_of_elements == 0:
+        print("The size of input matrix is zero in remove_trend_from_data.")
+        detrended_data = np.empty((0, input_data.shape[1]))
     else:
-        abnormal_temp_dataset = abnormal_dataset
-        abnormal_temp_dataset = tf.expand_dims(abnormal_temp_dataset, axis=-1)
-        _, abnormal_temp_recon = model.generator(abnormal_temp_dataset)
-        abnormal_temp_loss = tf.keras.losses.mae(
-            tf.reshape(abnormal_temp_recon, [len(abnormal_temp_recon), -1]),
-            tf.reshape(abnormal_temp_dataset, [len(abnormal_temp_dataset), -1]),
-        )
-        un_usable = tf.cast(
-            tf.math.greater_equal(abnormal_temp_loss, thresholds["unsatisfactory"]),
-            tf.uint8,
-        )
-        logger.info(
-            f"Testing unusable data - unusable number: {np.count_nonzero(un_usable)}, total: {len(abnormal_dataset)}"
-        )
+        x_values = np.linspace(0, 1, input_data.shape[0])
 
-    df.to_csv(os.path.join(out_directory, "report.csv"))
+        for cnt_col in range(input_data.shape[1]):
+            coeff = Polynomial.fit(x_values, input_data[:, cnt_col], order).convert().coef
+            poly_y_values = Polynomial(coeff[::-1])(x_values)
+            
+            detrended_data[:, cnt_col] = input_data[:, cnt_col] - poly_y_values
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluation for LowVelGAN")
-    parser.add_argument("--model", "-m", default="model", help="Model name")
-    parser.add_argument("--fail", "-f", type=float, default=16.2, help="Fail Threshold")
-    parser.add_argument(
-        "--threshold", "-t", type=float, default=8.1, help="Loss Threshold"
-    )
-    parser.add_argument(
-        "--select_year", "-sy", type=int, default=2023, help="Select year for dataset"
-    )
-
-    args = parser.parse_args()
-    evaluate(args)
+    return detrended_data
+result = remove_trend_from_data(filtered_data, 4)
+print(result)
+# # Plot the graph of vel_arr, v2_predicted_arr, and filteredData
+# time = np.arange(0, len(vel_arr)) * dt  # Create an array of time values
+# # plt.plot(time, vel_arr, label='Measured Velocity')
+# plt.plot(time, v2_predicted_arr[:, 0], label='Predicted Velocity')  # Index 0 for vertical component
+# plt.plot(time, filtered_data[:, 0], label='Filtered Velocity')  # Index 0 for vertical component
+# plt.xlabel('Time')
+# plt.ylabel('Velocity')
+# plt.title('Measured, Predicted, and Filtered Velocity over Time')
+# plt.grid(True)
+# plt.legend()
+# plt.show()
