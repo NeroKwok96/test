@@ -23,16 +23,13 @@ for i in range(len(acc_arr) - 1):
 
 def find_autocorrelation_value(input_data, p):
     coeff = np.zeros(input_data.shape[1])
-    # print("coeff: ", coeff)
     for cnt_col in range(input_data.shape[1]):
-        # print(cnt_col)
         if p >= 0:
             for n in range(p, input_data.shape[0]):
                 coeff[cnt_col] += input_data[n, cnt_col] * input_data[n - p, cnt_col]
         else:
             for n in range(0, input_data.shape[0] + p):
                 coeff[cnt_col] += input_data[n, cnt_col] * input_data[n - p, cnt_col]
-    # print("coeff: ", coeff)
     return coeff / input_data.shape[0]
 
 # p = 3
@@ -48,15 +45,15 @@ def find_ar_yule_coefficients(input_data, filter_order):
         yule_vector = np.zeros(filter_order)
         yule_matrix_list.append(yule_matrix)
         yule_vector_list.append(yule_vector)
-
-    for cnt_col in range(filter_order):
-        for cnt_row in range(cnt_col, filter_order):
+        print(yule_matrix)
+    for cnt_col in range(filter_order): # 0 - 10
+        for cnt_row in range(cnt_col, filter_order):# 0 - 0, 1 - 0, 2 - 0
             diff = cnt_row - cnt_col
             coeff = find_autocorrelation_value(input_data, diff)
             for cnt_channel in range(input_data.shape[1]):
                 yule_matrix_list[cnt_channel][cnt_row, cnt_col] = coeff[cnt_channel]
                 yule_matrix_list[cnt_channel][cnt_col, cnt_row] = coeff[cnt_channel]
-
+                print("matrix:",yule_matrix_list[cnt_channel])
     for cnt_row in range(filter_order):
         rhs_coeff = find_autocorrelation_value(input_data, cnt_row + 1)
         for cnt_channel in range(input_data.shape[1]):
@@ -79,7 +76,7 @@ def apply_filter_on_data(input_data, filter_order):
     return filtered_data
 
 
-filtered_data = apply_filter_on_data(v2_predicted_arr, 10)
+filtered_data = apply_filter_on_data(v2_predicted_arr, 5)
 
 from numpy.polynomial import Polynomial
 
@@ -102,7 +99,7 @@ def remove_trend_from_data(input_data, order):
 
     return detrended_data
 result = remove_trend_from_data(filtered_data, 4)
-print(result)
+# print(result)
 # # Plot the graph of vel_arr, v2_predicted_arr, and filteredData
 # time = np.arange(0, len(vel_arr)) * dt  # Create an array of time values
 # # plt.plot(time, vel_arr, label='Measured Velocity')
