@@ -5,5 +5,5 @@ matplotlib
 dvc
 dvc-s3
 dvclive
-awscli
+# awscli
 jupyterlab
