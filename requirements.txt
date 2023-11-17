@@ -1,9 +1,11 @@
-tensorflow
+tensorflow==2.14.0
 numpy
 pandas
 matplotlib
 dvc
 dvc-s3
 dvclive
-# awscli
+awscli
 jupyterlab
+python-dotenv
+psycopg2-binary
