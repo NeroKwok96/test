@@ -20,7 +20,6 @@ for i in range(len(acc_arr) - 1):
     v2_predicted_arr[i+1] = v2_predicted  # Start from index 1
     v1 = v2_predicted
 # v2_predicted_arr = v2_predicted_arr[:25600]  # Trim the array to desired size
-
 def find_autocorrelation_value(input_data, p):
     coeff = np.zeros(input_data.shape[1])
     for cnt_col in range(input_data.shape[1]):
@@ -31,7 +30,6 @@ def find_autocorrelation_value(input_data, p):
             for n in range(0, input_data.shape[0] + p):
                 coeff[cnt_col] += input_data[n, cnt_col] * input_data[n - p, cnt_col]
     return coeff / input_data.shape[0]
-
 # p = 3
 # coefficients = find_autocorrelation_value(v2_predicted_arr, 500)
 # print("Autocorrelation coefficients:", coefficients)
@@ -65,6 +63,7 @@ def find_ar_yule_coefficients(input_data, filter_order):
             yule_coeff[cnt_row, cnt_channel] = a[cnt_row]
 
     return yule_coeff
+
 def apply_filter_on_data(input_data, filter_order):
     yule_coeff = find_ar_yule_coefficients(input_data, filter_order)
     filtered_data = np.zeros_like(input_data)
@@ -98,16 +97,21 @@ def remove_trend_from_data(input_data, order):
             detrended_data[:, cnt_col] = input_data[:, cnt_col] - poly_y_values
 
     return detrended_data
+
 result = remove_trend_from_data(filtered_data, 4)
-# print(result)
-# # Plot the graph of vel_arr, v2_predicted_arr, and filteredData
-# time = np.arange(0, len(vel_arr)) * dt  # Create an array of time values
-# # plt.plot(time, vel_arr, label='Measured Velocity')
-# plt.plot(time, v2_predicted_arr[:, 0], label='Predicted Velocity')  # Index 0 for vertical component
-# plt.plot(time, filtered_data[:, 0], label='Filtered Velocity')  # Index 0 for vertical component
-# plt.xlabel('Time')
-# plt.ylabel('Velocity')
-# plt.title('Measured, Predicted, and Filtered Velocity over Time')
-# plt.grid(True)
-# plt.legend()
-# plt.show()
+print(result)
+# ... (Previous code)
+
+# Multiply filtered_data with -1
+filtered_data = np.multiply(filtered_data, -1)
+
+# Plot the graph of vel_arr, v2_predicted_arr, and filteredData
+time = np.arange(0, len(vel_arr)) * dt  # Create an array of time values
+plt.plot(time, vel_arr, label='Measured Velocity')
+plt.plot(time, filtered_data[:, 0], label='Filtered Velocity (Negative)')
+plt.xlabel('Time')
+plt.ylabel('Velocity')
+plt.title('Measured and Filtered Velocity over Time (Negative)')
+plt.grid(True)
+plt.legend()
+plt.show()

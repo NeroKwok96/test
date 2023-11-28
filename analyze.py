@@ -100,6 +100,10 @@ for file_path in file_path_list:
 fan_csv_paths_sorted = sorted(fan_csv_path_to_checked, key=lambda x: os.path.basename(x).split('_')[1:3])
 motor_csv_paths_sorted = sorted(motor_csv_path_to_checked, key=lambda x: os.path.basename(x).split('_')[1:3])
 
+# Limited date range:
+customized_period_from = '2023-10-18'
+customized_period_to = '2023-11-18'
+
 # Debug usage
 # for i in fan_csv_paths_sorted:
 #     file = os.path.basename(i)
@@ -107,6 +111,8 @@ motor_csv_paths_sorted = sorted(motor_csv_path_to_checked, key=lambda x: os.path
 # for i in motor_csv_paths_sorted:
 #     file = os.path.basename(i)
 #     print(file)
+# print(len(fan_csv_path_to_checked))
+# print(len(motor_csv_path_to_checked))
 def process_fan_data(csv_path_list):
     for csv in csv_path_list:
         file_name = os.path.basename(csv)
@@ -195,18 +201,20 @@ def process_other_type_data(data, sensor_id, health_type, file_name):
         selected_row = sensor_data_cache[sensor_id]
     else:
         select_xsdb_query = """
-        SELECT sl.location_name AS sensor_location, m.machine_name, o.subdomain_name AS organization_sym, site.site_id AS site_sym
-        FROM sensor s
-        JOIN sensor_location sl ON sl.sensor_id = s.id
+        SELECT period_from, period_to, location_name, m.machine_name, o.subdomain_name, site.site_id
+        FROM sensor_history sh
+        JOIN sensor_location sl ON sh.sensor_location_id = sl.id
+        JOIN sensor s ON s.id = sh.sensor_id
         JOIN machine m ON sl.machine_id = m.id
         JOIN floorplan f ON f.id = m.floorplan_id
         JOIN site ON site.id = f.site_id
         JOIN organization o ON o.id = site.organization_id
-        WHERE s.node_id = %s
+        WHERE s.node_id = %s and period_from >= %s and period_from <= %s;
         """
-        cursor_xsdb.execute(select_xsdb_query, (int(sensor_id),))
+        cursor_xsdb.execute(select_xsdb_query, (int(sensor_id), customized_period_from, customized_period_to))
         selected_row = cursor_xsdb.fetchone()
         sensor_data_cache[sensor_id] = selected_row
+
 
     max_vertical = round(data['vertical'].max(), 9)
     max_horizontal = round(data['horizontal'].max(), 9)
@@ -241,23 +249,23 @@ def process_other_type_data(data, sensor_id, health_type, file_name):
 # print(sensor_data_cache)
 
 # Select the latest results done by manual computation
-latest_records_query = """
+latest_records_query_manual = """
 WITH cte AS (
      SELECT max_vertical, max_horizontal, max_axial, max_velocity, computation_type, invoked_filename, node_id, sensor_location_name, machine_name, health_type, invocation_timestamp,
             TO_TIMESTAMP(SPLIT_PART(f.invoked_filename, '_', 2) || SPLIT_PART(f.invoked_filename, '_', 3), 'YYYYMMDDHH24MISS') AS extracted_datetime,
             ROW_NUMBER() OVER (PARTITION BY machine_name , health_type, sensor_location_name, invoked_filename ORDER BY invocation_timestamp DESC) AS rn
      FROM fact_machine_health f
      JOIN dim_sensor_info d ON f.sensor_info_id = d.id
-     WHERE sensor_location_name IS NOT NULL AND health_type IS NOT null and computation_type = 'model' and machine_name = '6B ISO Rm 1 Fan no.2'
+     WHERE sensor_location_name IS NOT NULL AND health_type IS NOT null and computation_type = 'manual' and machine_name = '6B ISO Rm 1 Fan no.2'
  )
  SELECT max_vertical, max_horizontal, max_axial, max_velocity, computation_type, invoked_filename, 
  node_id, sensor_location_name, machine_name, health_type, invocation_timestamp, extracted_datetime, rn
  FROM cte
- WHERE rn = 1
+ WHERE rn = 1 and extracted_datetime >= '2023-10-26 08:08:23' and extracted_datetime <= '2023-11-18 00:00:00'
  ORDER BY extracted_datetime ASC;
 """
 cursor_xswh = conn_to_xswh.cursor()
-cursor_xswh.execute(latest_records_query)
+cursor_xswh.execute(latest_records_query_manual)
 manual_computation_records = cursor_xswh.fetchall()
 fan_balancing_list = []
 fan_misalignment_list = []
@@ -421,61 +429,90 @@ plt.xlabel('Datetime')
 plt.ylabel('Value')
 plt.title('Motor Belt Analysis')
 
+latest_records_query_model = """
+WITH cte AS (
+    SELECT mae, health, computation_type, invoked_filename, node_id, sensor_location_name, machine_name, health_type, invocation_timestamp,
+           TO_TIMESTAMP(SPLIT_PART(f.invoked_filename, '_', 2) || SPLIT_PART(f.invoked_filename, '_', 3), 'YYYYMMDDHH24MISS') AS extracted_datetime,
+           ROW_NUMBER() OVER (PARTITION BY machine_name , health_type, sensor_location_name, invoked_filename ORDER BY invocation_timestamp DESC) AS rn
+    FROM fact_machine_health f
+    JOIN dim_sensor_info d ON f.sensor_info_id = d.id
+    WHERE sensor_location_name IS NOT NULL AND health_type IS NOT NULL and computation_type = 'model' and machine_name = '6B ISO Rm 1 Fan no.2'
+)
+SELECT mae, health, computation_type, invoked_filename, node_id, sensor_location_name, machine_name, health_type, invocation_timestamp, extracted_datetime, rn
+FROM cte
+WHERE rn = 1 and extracted_datetime >= '2023-10-26 08:08:23' and extracted_datetime <= '2023-11-18 00:00:00'
+ORDER BY extracted_datetime DESC;
+"""
+cursor_xswh.execute(latest_records_query_model)
+model_computation_records = cursor_xswh.fetchall()
+fan_balancing_list = []
+fan_misalignment_list = []
+fan_bearing_list = []
+fan_belt_list = []
+fan_flow_list = []
+motor_balancing_list = []
+motor_misalignment_list = []
+motor_bearing_list = []
+motor_belt_list = []
+
+for record in model_computation_records:
+    mae = record[0]
+    location_name = record[5]
+    health_type = record[7]
+    extracted_datetime = record[9]
+    # print(location_name)
+    if location_name == 'Fan-DE':
+        if health_type == 'balancing':
+            fan_balancing_list.append([mae, extracted_datetime])
+        elif health_type == 'misalignment':
+            fan_misalignment_list.append([mae, extracted_datetime])
+        elif health_type == 'bearing':
+            fan_bearing_list.append([mae, extracted_datetime])
+        elif health_type == 'belt':
+            fan_belt_list.append([mae, extracted_datetime])
+        elif health_type == 'flow':
+            fan_flow_list.append([mae, extracted_datetime])
+        
+    elif location_name == 'Motor':
+        if health_type == 'balancing':
+            motor_balancing_list.append([mae, extracted_datetime])
+        elif health_type == 'misalignment':
+            motor_misalignment_list.append([mae, extracted_datetime])
+        elif health_type == 'bearing':
+            motor_bearing_list.append([mae, extracted_datetime])
+        elif health_type == 'belt':
+            motor_belt_list.append([mae, extracted_datetime])
+
+fan_balancing_df = pd.DataFrame(fan_balancing_list, columns=['mae', 'extracted_datetime'])
+fan_misalignment_df = pd.DataFrame(fan_misalignment_list, columns=['mae', 'extracted_datetime'])
+fan_bearing_df = pd.DataFrame(fan_bearing_list, columns=['mae', 'extracted_datetime'])
+fan_belt_df = pd.DataFrame(fan_belt_list, columns=['mae', 'extracted_datetime'])
+fan_flow_df = pd.DataFrame(fan_flow_list, columns=['mae', 'extracted_datetime'])
+motor_balancing_df = pd.DataFrame(motor_balancing_list, columns=['mae', 'extracted_datetime'])
+motor_misalignment_df = pd.DataFrame(motor_misalignment_list, columns=['mae', 'extracted_datetime'])
+motor_bearing_df = pd.DataFrame(motor_bearing_list, columns=['mae', 'extracted_datetime'])
+motor_belt_df = pd.DataFrame(motor_belt_list, columns=['mae', 'extracted_datetime'])
+
+import matplotlib.pyplot as plt
+
+# Create a new figure and axes for the fan_balancing plot
+fig_mae, ax_mae = plt.subplots()
+# Plotting fan_balancing_df
+plt.plot(fan_balancing_df['extracted_datetime'], fan_balancing_df['mae'], label='fan mae (balancing)')
+plt.plot(fan_misalignment_df['extracted_datetime'], fan_misalignment_df['mae'], label='fan mae (misalignment)')
+plt.plot(fan_bearing_df['extracted_datetime'], fan_bearing_df['mae'], label='fan mae (bearing)')
+plt.plot(fan_belt_df['extracted_datetime'], fan_belt_df['mae'], label='fan mae (belt)')
+plt.plot(fan_flow_df['extracted_datetime'], fan_flow_df['mae'], label='fan mae (flow)')
+
+plt.plot(motor_balancing_df['extracted_datetime'], motor_balancing_df['mae'], label='motor mae (balancing)')
+plt.plot(motor_misalignment_df['extracted_datetime'], motor_misalignment_df['mae'], label='motor mae (misalignment)')
+plt.plot(motor_bearing_df['extracted_datetime'], motor_bearing_df['mae'], label='motor mae (bearing)')
+plt.plot(motor_belt_df['extracted_datetime'], motor_belt_df['mae'], label='motor mae (belt)')
+
+plt.legend()
+plt.xlabel('Datetime')
+plt.ylabel('Mae')
+plt.title('MAE Analysis')
+
 # Displaying both plots
 plt.show()
-
-latest_records_query = """
-WITH cte AS (
-     SELECT max_vertical, max_horizontal, max_axial, max_velocity, computation_type, invoked_filename, node_id, sensor_location_name, machine_name, health_type, invocation_timestamp,
-            TO_TIMESTAMP(SPLIT_PART(f.invoked_filename, '_', 2) || SPLIT_PART(f.invoked_filename, '_', 3), 'YYYYMMDDHH24MISS') AS extracted_datetime,
-            ROW_NUMBER() OVER (PARTITION BY machine_name , health_type, sensor_location_name, invoked_filename ORDER BY invocation_timestamp DESC) AS rn
-     FROM fact_machine_health f
-     JOIN dim_sensor_info d ON f.sensor_info_id = d.id
-     WHERE sensor_location_name IS NOT NULL AND health_type IS NOT NULL and computation_type = 'manual' and machine_name = '6B ISO Rm 1 Fan no.2' and sensor_location_name = 'Fan-DE'
- )
- SELECT max_vertical, max_horizontal, max_axial, max_velocity, computation_type, invoked_filename, 
- node_id, sensor_location_name, machine_name, health_type, invocation_timestamp, extracted_datetime, rn
- FROM cte
- WHERE rn = 1
- ORDER BY extracted_datetime ASC;
-"""
-# # Initialize lists to store the data points
-# timestamps = []
-# health_scores = []
-# health_types = []
-
-# # Iterate over the selected rows
-# for row in selected_row:
-#     health_score = row[0]
-#     node_id = row[2]
-#     sensor_location_name = row[3]
-#     health_type = row[5]
-#     timestamp = row[6]
-
-#     # Add data points to the respective lists
-#     timestamps.append(timestamp)
-#     health_scores.append(health_score)
-#     health_types.append(health_type)
-
-# # Plot the graph
-# plt.figure()
-# plt.title(sensor_location_name)  # Set the title as the sensor_location_name
-
-# # Define line styles, colors, and markers
-# line_styles = ['-', '--', '-.', ':']
-# line_colors = ['blue', 'green', 'red', 'purple']
-# line_markers = ['o', 's', '^', 'v']
-
-# # Plot each health_type separately with its corresponding data points
-# unique_types = set(health_types)
-# for i, unique_type in enumerate(unique_types):
-#     x = [timestamps[j] for j in range(len(health_types)) if health_types[j] == unique_type]
-#     y = [health_scores[j] for j in range(len(health_types)) if health_types[j] == unique_type]
-#     plt.plot(x, y, label=unique_type, linestyle=line_styles[i % len(line_styles)], color=line_colors[i % len(line_colors)],
-#      )  # Customize line styles, colors, and markers
-
-# plt.xlabel('Timestamp')
-# plt.ylabel('Health Score')
-# plt.legend()  # Add the legend based on health_type
-# plt.tight_layout()  # Improve spacing between subplots
-# plt.show()
