@@ -56,7 +56,6 @@ def calculate_machine_health(mae, threshold_good, threshold_usable, threshold_un
     else:
         machine_health = 4
     return machine_health
-fan_record_count = motor_record_count = 0
 
 # Connect to XS warehouse
 conn_to_xswh = psycopg2.connect(
@@ -129,7 +128,6 @@ for index in range(len(sensor_history_rows)):
     if location_name == 'Motor':
         allowed_motor_sensor_ids.add(sensor_id)
     sensor_data_cache_list.append(sensor_history_rows[index])
-
 # Filter the unwanted dataset path base on the timestamp of the filename in local storage
 for file_path in file_path_list:
     file_name = os.path.basename(file_path)
@@ -143,25 +141,31 @@ for file_path in file_path_list:
         period_to = sensor_data[6]
         if period_to == None: period_to = datetime.now().strftime("%Y%m%d_%H%M%S")
         else: period_to = sensor_data[6].strftime("%Y%m%d_%H%M%S")
-        if sensor_id_from_history in allowed_fan_sensor_ids and (sensor_id_from_history == sensor_id_from_file) and (combined_timestamp >= customized_period_from and combined_timestamp >= period_from) and (combined_timestamp <= period_to and combined_timestamp <= customized_period_to):
+        if sensor_id_from_file in allowed_fan_sensor_ids and (sensor_id_from_file == sensor_id_from_history) and (combined_timestamp >= customized_period_from and combined_timestamp >= period_from) and (combined_timestamp <= period_to and combined_timestamp <= customized_period_to):
             fan_csv_path_to_checked.add(file_path)
-        elif sensor_id_from_history in allowed_motor_sensor_ids and (sensor_id_from_history == sensor_id_from_file) and (combined_timestamp >= customized_period_from and combined_timestamp >= period_from) and (combined_timestamp <= period_to and combined_timestamp <= customized_period_to):
+        elif sensor_id_from_file in allowed_motor_sensor_ids and (sensor_id_from_file == sensor_id_from_history) and (combined_timestamp >= customized_period_from and combined_timestamp >= period_from) and (combined_timestamp <= period_to and combined_timestamp <= customized_period_to):
             motor_csv_path_to_checked.add(file_path)
 
 # Sort the csv by date in ascending order
 fan_csv_paths_sorted = sorted(fan_csv_path_to_checked, key=lambda x: os.path.basename(x).split('_')[1:3])
 motor_csv_paths_sorted = sorted(motor_csv_path_to_checked, key=lambda x: os.path.basename(x).split('_')[1:3])
-
-# for i in fan_csv_paths_sorted:
-#     print(i)
-# print('motor_csv_paths_sorted', motor_csv_paths_sorted)
+fan_dataset = set()
+motor_dataset = set()
 # Debug usage
-# for i in fan_csv_paths_sorted:
-#     file = os.path.basename(i)
-#     print('fan_file: ', file)
-# for i in motor_csv_paths_sorted:
-#     file = os.path.basename(i)
-#     print('motor_file: ', file)
+fan_sensor_id_validation = set()
+motor_sensor_id_validation = set()
+for i in fan_csv_paths_sorted:
+    file = os.path.basename(i)
+    sensor_id_from_file = file.split('_')[0]
+    fan_sensor_id_validation.add(sensor_id_from_file)
+    fan_dataset.add(file)
+for i in motor_csv_paths_sorted:
+    file = os.path.basename(i)
+    sensor_id_from_file = file.split('_')[0]
+    motor_sensor_id_validation.add(sensor_id_from_file)
+    motor_dataset.add(file)
+print("Number of dataset of fan: ", len(fan_dataset))
+print("Number of dataset of motor: ", len(motor_dataset))
 
 def preprocessing(csv_path_list):
     # Skip the predicted file_name:
@@ -176,30 +180,16 @@ def preprocessing(csv_path_list):
      )
      SELECT mae, health, computation_type, invoked_filename, node_id, sensor_location_name, machine_name, health_type, invocation_timestamp, extracted_datetime
      FROM cte
-     WHERE rn = 1
+     WHERE rn = 1 and computation_type = 'model' and extracted_datetime >= '2023-10-18' and extracted_datetime <= '2023-11-18'
      ORDER BY extracted_datetime ASC;
     """
-    cursor_xswh.execute(temp_query)
-    temp_query_result = cursor_xswh.fetchall()
-    fan_health_type_set = {'balancing', 'misalignment', 'bearing', 'flow', 'belt'}
-    motor_health_type_set = {'balancing', 'misalignment', 'bearing', 'belt'}
-    fan_health_type_set_to_check = set()
-    motor_health_type_set_to_check = set()
-    computation_type = None
-    for result in temp_query_result:
-        computation_type = result[2]
-        invoked_filename = result[3]
-        invoked_filename_set.add(invoked_filename)
-        location_name = result[5]
-        health_type = result[7]
-        if location_name == 'Fan-DE':
-            fan_health_type_set_to_check.add(health_type)
-        if location_name == 'Motor':
-            motor_health_type_set_to_check.add(health_type)
+    # cursor_xswh.execute(temp_query)
+    # temp_query_result = cursor_xswh.fetchall()
 
     # Start the data processing
     for csv in csv_path_list:
         file_name = os.path.basename(csv)
+        print(f"Processing: {file_name}")
         data = pd.read_csv(csv)
         data = data.drop(columns=[data.columns[-1]])
         sensor_id = file_name.split('_')[0]
@@ -219,7 +209,7 @@ def preprocessing(csv_path_list):
         belt_vertical_variance = np.abs(belt_df[:, 0:1] - np.max(belt_df[:, 0:1]))
         belt_horizontal_variance = np.abs(belt_df[:, 1:2] - np.max(belt_df[:, 1:2]))
         belt_axial_variance = np.abs(belt_df[:, 2:] - np.max(belt_df[:, 2:]))
-        belt_input_data = np.concatenate([belt_df, belt_squared_values, belt_vertical_variance,     belt_horizontal_variance, belt_axial_variance], axis=-1)
+        belt_input_data = np.concatenate([belt_df, belt_squared_values, belt_vertical_variance, belt_horizontal_variance, belt_axial_variance], axis=-1)
         belt_actual_data = np.reshape(belt_input_data, (1,128,8,1))
         # Fan flow
         flow_df_1 = data.to_numpy()[885:885 + 42, 1:3]
@@ -233,15 +223,28 @@ def preprocessing(csv_path_list):
         bearing_vertical_variance = np.abs(bearing_df[:, 0:1] - np.sqrt(np.sum(np.square(bearing_df[:, 0:1])) / 1.5))
         bearing_horizontal_variance = np.abs(bearing_df[:, 1:2] - np.sqrt(np.sum(np.square(bearing_df[:, 1:2])) / 1.5))
         bearing_axial_variance = np.abs(bearing_df[:, 2:] - np.sqrt(np.sum(np.square(bearing_df[:, 2:])) / 1.5))
-        bearing_input_data = np.concatenate([bearing_df, bearing_squared_values, bearing_vertical_variance,     bearing_horizontal_variance, bearing_axial_variance], axis=-1)
+        bearing_input_data = np.concatenate([bearing_df, bearing_squared_values, bearing_vertical_variance, bearing_horizontal_variance, bearing_axial_variance], axis=-1)
         bearing_actual_data = np.reshape(bearing_input_data, (1,2048,8,1))
+
+        fan_record_count = motor_record_count = 0
+        check_existed_query = """SELECT COUNT(DISTINCT health_type) FROM staging_machine_health WHERE invoked_filename = %s AND health_type IN ('balancing', 'misalignment', 'belt', 'bearing', 'flow') AND sensor_location_name = 'Fan-DE' AND computation_type = 'model'"""
+        cursor_xswh.execute(check_existed_query, (file_name,))
+        fan_record_count = cursor_xswh.fetchone()
+
+        check_existed_query = """SELECT COUNT(DISTINCT health_type) FROM staging_machine_health WHERE invoked_filename = %s AND health_type IN ('balancing', 'misalignment', 'belt', 'bearing') AND sensor_location_name = 'Motor' AND computation_type = 'model'"""
+        cursor_xswh.execute(check_existed_query, (file_name,))
+        motor_record_count = cursor_xswh.fetchone()
+
         computation_type = None
-        for result in temp_query_result:
-            computation_type = result[2]
-            if (sensor_id in allowed_fan_sensor_ids) and (fan_health_type_set_to_check != fan_health_type_set) and (computation_type == 'manual' or computation_type == None):
+        if sensor_id in fan_sensor_id_validation:
+            # for result in temp_query_result:
+            if (computation_type != 'model' or computation_type == None) and fan_record_count[0] != 5:
                 fan_dataset_prediction(balancing_actual_data, misalignment_actual_data, belt_actual_data, flow_actual_data, bearing_actual_data, file_name, sensor_id)
-            elif sensor_id in allowed_motor_sensor_ids and motor_health_type_set_to_check != motor_health_type_set and computation_type != 'model':
+        elif sensor_id in motor_sensor_id_validation:
+            # for result in temp_query_result:
+            if (computation_type != 'model' or computation_type == None) and motor_record_count[0] != 4:
                 motor_dataset_prediction(balancing_actual_data, misalignment_actual_data, belt_actual_data, bearing_actual_data, file_name, sensor_id)
+        print(f"{file_name} already predicted, skipping")
 
 
 def fan_dataset_prediction(balancing_actual_data, misalignment_actual_data, belt_actual_data, flow_actual_data, bearing_actual_data, file_name, sensor_id):
@@ -284,43 +287,20 @@ def fan_dataset_prediction(balancing_actual_data, misalignment_actual_data, belt
     print('fan_bearing_mae: ', fan_bearing_mae)
     print('fan_bearing_machine_health: ', fan_bearing_machine_health)
     
-    # XS database query
-    # cursor_xsdb = conn_to_xsdb.cursor()
-    # Select the sensor_location and machine_name from xs db
-    # selected_row = None 
-    # Fetch the sensor data from the cache
-    # if sensor_id in sensor_data_cache:
-    #     selected_row = sensor_data_cache[sensor_id]
-    # else:
-    #     select_xsdb_query = """
-    #     SELECT location_name, m.machine_name, o.subdomain_name, site.site_id, period_from, period_to
-    #     FROM sensor_history sh
-    #     JOIN sensor_location sl ON sh.sensor_location_id = sl.id
-    #     JOIN sensor s ON s.id = sh.sensor_id
-    #     JOIN machine m ON sl.machine_id = m.id
-    #     JOIN floorplan f ON f.id = m.floorplan_id
-    #     JOIN site ON site.id = f.site_id
-    #     JOIN organization o ON o.id = site.organization_id
-    #     WHERE s.node_id = %s and period_from >= %s and period_to <= %s;
-    #     """
-    #     cursor_xsdb.execute(select_xsdb_query, (int(sensor_id), customized_period_from, customized_period_to))
-    #     selected_row = cursor_xsdb.fetchone()
-    #     sensor_data_cache[sensor_id] = selected_row
     for sensor_data in sensor_data_cache_list:
         sensor_id_from_history = str(sensor_data[0])
         period_from = sensor_data[5].strftime("%Y%m%d_%H%M%S")
         period_to = sensor_data[6]
         if period_to == None: period_to = datetime.now().strftime("%Y%m%d_%H%M%S")
         else: period_to = sensor_data[6].strftime("%Y%m%d_%H%M%S")
-        if sensor_id_from_history == sensor_id and period_from >= customized_period_from and period_to <= customized_period_to:
+        if sensor_id_from_history == sensor_id and customized_period_from >= period_from and customized_period_from <= period_to:
+            print(sensor_data)
             sensor_location = sensor_data[1]
             machine_name = sensor_data[2]
             organization_sym = sensor_data[3]
             site_sym = sensor_data[4]
-            # Close the connection of the xsdb
-            # cursor_xsdb.close()
 
-            # XS warehouse query
+            # Insert the predicted results into warehouse
             cursor_xswh = conn_to_xswh.cursor()
             insert_xswh_query = """
             INSERT INTO staging_machine_health (node_id, sensor_location_name, machine_name, mae, health, organization_sym, site_sym, invoked_filename, health_type, computation_type) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -330,7 +310,7 @@ def fan_dataset_prediction(balancing_actual_data, misalignment_actual_data, belt
             cursor_xswh.execute(insert_xswh_query, (int(sensor_id), sensor_location, machine_name, fan_belt_mae, fan_belt_machine_health, organization_sym, site_sym, file_name, 'belt', 'model'))
             cursor_xswh.execute(insert_xswh_query, (int(sensor_id), sensor_location, machine_name, fan_flow_mae, fan_flow_machine_health, organization_sym, site_sym, file_name, 'flow', 'model'))
             cursor_xswh.execute(insert_xswh_query, (int(sensor_id), sensor_location, machine_name, fan_bearing_mae, fan_bearing_machine_health, organization_sym, site_sym, file_name, 'bearing', 'model'))
-            # conn_to_xswh.commit()
+            conn_to_xswh.commit()
 
 def motor_dataset_prediction(balancing_actual_data, misalignment_actual_data, belt_actual_data, bearing_actual_data, file_name, sensor_id):
     # Load motor models
@@ -371,23 +351,63 @@ def motor_dataset_prediction(balancing_actual_data, misalignment_actual_data, be
         period_to = sensor_data[6]
         if period_to == None: period_to = datetime.now().strftime("%Y%m%d_%H%M%S")
         else: period_to = sensor_data[6].strftime("%Y%m%d_%H%M%S")
-        if sensor_id_from_history == sensor_id and period_from >= customized_period_from and period_to <= customized_period_to:
+        if sensor_id_from_history == sensor_id and customized_period_from >= period_from and customized_period_to <= period_to:
+            print(sensor_data)
             sensor_location = sensor_data[1]
             machine_name = sensor_data[2]
             organization_sym = sensor_data[3]
             site_sym = sensor_data[4]
 
-            # # XS warehouse query
             cursor_xswh = conn_to_xswh.cursor()
             insert_xswh_query = "INSERT INTO staging_machine_health (node_id, sensor_location_name, machine_name, mae, health, organization_sym, site_sym, invoked_filename, health_type, computation_type) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
             cursor_xswh.execute(insert_xswh_query, (int(sensor_id), sensor_location, machine_name, motor_balancing_mae, motor_balancing_machine_health, organization_sym, site_sym, file_name, 'balancing', 'model'))
             cursor_xswh.execute(insert_xswh_query, (int(sensor_id), sensor_location, machine_name, motor_misalignment_mae, motor_misalignment_machine_health, organization_sym, site_sym, file_name, 'misalignment', 'model'))
             cursor_xswh.execute(insert_xswh_query, (int(sensor_id), sensor_location, machine_name, motor_belt_mae, motor_belt_machine_health, organization_sym, site_sym, file_name, 'belt', 'model'))
             cursor_xswh.execute(insert_xswh_query, (int(sensor_id), sensor_location, machine_name, motor_bearing_mae, motor_bearing_machine_health, organization_sym, site_sym, file_name, 'bearing', 'model'))
-            # conn_to_xswh.commit()
+            conn_to_xswh.commit()
+
+
 preprocessing(fan_csv_paths_sorted)
 preprocessing(motor_csv_paths_sorted)
 
+fan_dataset_from_db = set()
+motor_dataset_from_db = set()
+fan_dataset_from_local = set()
+motor_dataset_from_local = set()
+temp_query = """
+WITH cte AS (
+     SELECT mae, health, computation_type, invoked_filename, node_id, sensor_location_name, machine_name, health_type, invocation_timestamp,
+            TO_TIMESTAMP(SPLIT_PART(f.invoked_filename, '_', 2) || SPLIT_PART(f.invoked_filename, '_', 3), 'YYYYMMDDHH24MISS') AS extracted_datetime,
+            ROW_NUMBER() OVER (PARTITION BY machine_name , health_type, sensor_location_name, invoked_filename ORDER BY invocation_timestamp DESC) AS rn
+     FROM fact_machine_health f
+     JOIN dim_sensor_info d ON f.sensor_info_id = d.id
+     WHERE sensor_location_name IS NOT NULL AND health_type IS NOT NULL and machine_name in ('6B ISO Rm 1 Fan no.1', '6B ISO Rm 1 Fan no.2', '6B ISO Rm 2 Fan no.1', '6B ISO Rm 2 Fan no.2')
+ )
+ SELECT mae, health, computation_type, invoked_filename, node_id, sensor_location_name, machine_name, health_type, invocation_timestamp, extracted_datetime
+ FROM cte
+ WHERE rn = 1 and computation_type = 'model' and extracted_datetime >= '2023-10-18' and extracted_datetime <= '2023-11-18'
+ ORDER BY invocation_timestamp DESC;
+"""
+cursor_xswh.execute(temp_query)
+temp_query_result = cursor_xswh.fetchall()
+for i in fan_csv_paths_sorted:
+    file_name = os.path.basename(i)
+    fan_dataset_from_local.add(file_name)
+for i in temp_query_result:
+    location_name = i[5]
+    file_name = i[3]
+    if location_name == 'Fan-DE':
+        fan_dataset_from_db.add(file_name)
+
+print('fan dataset from warehouse' ,len(fan_dataset_from_db))
+print('fan dataset from local' ,len(fan_dataset_from_local))
+# print('motor dataset from warehouse' ,len(motor_dataset_from_db))
+count = 0
+element = fan_dataset_from_local.difference(fan_dataset_from_db)
+fan_dataset_from_local_sorted = sorted(element, key=lambda x: os.path.basename(x).split('_')[1:3])
+for file in fan_dataset_from_local_sorted:
+    count += 1
+    print(f"{count} File is missing: {file}")
 # docker run -it --rm --name my-running-app -v C:/Users/hikar/Documents/Code/xs-tswh-vel-spec-ai/out/models:/usr/src/app/out/models -v C:/Users/hikar/Documents/Code/xs-tswh-vel-spec-ai/data:/usr/src/app/data -v C:/Users/hikar/Documents/Code/xs-tswh-vel-spec-ai/src:/usr/src/app/src -v C:/Users/hikar/Documents/Code/xs-tswh-vel-spec-ai/src/test_model_copy.py:/usr/src/app/src/test_model_copy.py -v C:/Users/hikar/Documents/Code/xs-tswh-vel-spec-ai/.env:/usr/src/app/.env xs-tensorflow-app python src/test_model_copy.py
 
 # SELECT period_from, period_to, location_name, m.machine_name, o.subdomain_name, site.site_id, node_id
