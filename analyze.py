@@ -104,16 +104,16 @@ for file_path in file_path_list:
     formatted_date = file_name.split('_')[1]
     formatted_time = file_name.split('_')[2]
     combined_timestamp = f"{formatted_date}_{formatted_time}"
-    if sensor_id in allowed_fan_sensor_ids and (combined_timestamp >= '20230918_000000' and combined_timestamp <= '20231118_000000'):
+    if sensor_id in allowed_fan_sensor_ids and (combined_timestamp >= '20231018_000000' and combined_timestamp <= '20231121_000000'):
         fan_csv_path_to_checked.add(file_path)
-    elif sensor_id in allowed_motor_sensor_ids and (combined_timestamp >= '20230918_000000' and combined_timestamp <= '20231118_000000'):
+    elif sensor_id in allowed_motor_sensor_ids and (combined_timestamp >= '20231018_000000' and combined_timestamp <= '20231121_000000'):
         motor_csv_path_to_checked.add(file_path)
 fan_csv_paths_sorted = sorted(fan_csv_path_to_checked, key=lambda x: os.path.basename(x).split('_')[1:3])
 motor_csv_paths_sorted = sorted(motor_csv_path_to_checked, key=lambda x: os.path.basename(x).split('_')[1:3])
 
 # Limited date range:
 customized_period_from = '2023-10-18'
-customized_period_to = '2023-11-18'
+customized_period_to = '2023-11-21'
 
 # Debug usage
 # for i in fan_csv_paths_sorted:
@@ -272,7 +272,7 @@ WITH cte AS (
  SELECT max_vertical, max_horizontal, max_axial, max_velocity, computation_type, invoked_filename, 
  node_id, sensor_location_name, machine_name, health_type, invocation_timestamp, extracted_datetime, rn
  FROM cte
- WHERE rn = 1 and computation_type = 'manual' and extracted_datetime >= '2023-10-18' and extracted_datetime <= '2023-11-18'
+ WHERE rn = 1 and computation_type = 'manual' and extracted_datetime >= '2023-10-18' and extracted_datetime <= '2023-11-21'
  ORDER BY extracted_datetime ASC;
 """
 cursor_xswh = conn_to_xswh.cursor()
@@ -331,114 +331,114 @@ motor_belt_df = pd.DataFrame(motor_belt_list, columns=['max_vertical', 'max_hori
 
 import matplotlib.pyplot as plt
 
-# # Create a new figure and axes for the fan_balancing plot
-# fig_fan_balancing, ax_fan_balancing = plt.subplots()
-# # Plotting fan_balancing_df
-# plt.plot(fan_balancing_df['extracted_datetime'], fan_balancing_df['max_vertical'], label='max_vertical (balancing)')
-# plt.plot(fan_balancing_df['extracted_datetime'], fan_balancing_df['max_horizontal'], label='max_horizontal (balancing)')
-# plt.plot(fan_balancing_df['extracted_datetime'], fan_balancing_df['max_axial'], label='max_axial (balancing)')
-# plt.plot(fan_balancing_df['extracted_datetime'], fan_balancing_df['max_velocity'], label='max_velocity (balancing)')
-# plt.legend()
-# plt.xlabel('Datetime')
-# plt.ylabel('Value')
-# plt.title('Fan Balancing Analysis')
+# Create a new figure and axes for the fan_balancing plot
+fig_fan_balancing, ax_fan_balancing = plt.subplots()
+# Plotting fan_balancing_df
+plt.plot(fan_balancing_df['extracted_datetime'], fan_balancing_df['max_vertical'], label='max_vertical (balancing)')
+plt.plot(fan_balancing_df['extracted_datetime'], fan_balancing_df['max_horizontal'], label='max_horizontal (balancing)')
+plt.plot(fan_balancing_df['extracted_datetime'], fan_balancing_df['max_axial'], label='max_axial (balancing)')
+plt.plot(fan_balancing_df['extracted_datetime'], fan_balancing_df['max_velocity'], label='max_velocity (balancing)')
+plt.legend()
+plt.xlabel('Datetime')
+plt.ylabel('Value')
+plt.title('Fan Balancing Analysis')
 
-# # Create a new figure and axes for the fan_misalignment plot
-# fig_fan_misalignment, ax_fan_misalignment = plt.subplots()
-# # Plotting fan_misalignment_df
-# plt.plot(fan_misalignment_df['extracted_datetime'], fan_misalignment_df['max_vertical'], label='max_vertical (misalignment)')
-# plt.plot(fan_misalignment_df['extracted_datetime'], fan_misalignment_df['max_horizontal'], label='max_horizontal (misalignment)')
-# plt.plot(fan_misalignment_df['extracted_datetime'], fan_misalignment_df['max_axial'], label='max_axial (misalignment)')
-# plt.plot(fan_misalignment_df['extracted_datetime'], fan_misalignment_df['max_velocity'], label='max_velocity (misalignment)')
-# plt.legend()
-# plt.xlabel('Datetime')
-# plt.ylabel('Value')
-# plt.title('Fan Misalignment Analysis')
+# Create a new figure and axes for the fan_misalignment plot
+fig_fan_misalignment, ax_fan_misalignment = plt.subplots()
+# Plotting fan_misalignment_df
+plt.plot(fan_misalignment_df['extracted_datetime'], fan_misalignment_df['max_vertical'], label='max_vertical (misalignment)')
+plt.plot(fan_misalignment_df['extracted_datetime'], fan_misalignment_df['max_horizontal'], label='max_horizontal (misalignment)')
+plt.plot(fan_misalignment_df['extracted_datetime'], fan_misalignment_df['max_axial'], label='max_axial (misalignment)')
+plt.plot(fan_misalignment_df['extracted_datetime'], fan_misalignment_df['max_velocity'], label='max_velocity (misalignment)')
+plt.legend()
+plt.xlabel('Datetime')
+plt.ylabel('Value')
+plt.title('Fan Misalignment Analysis')
 
-# # Create a new figure and axes for the fan_bearing plot
-# fig_fan_bearing, ax_fan_bearing = plt.subplots()
-# # Plotting fan_bearing_df
-# plt.plot(fan_bearing_df['extracted_datetime'], fan_bearing_df['max_vertical'], label='max_vertical (bearing)')
-# plt.plot(fan_bearing_df['extracted_datetime'], fan_bearing_df['max_horizontal'], label='max_horizontal (bearing)')
-# plt.plot(fan_bearing_df['extracted_datetime'], fan_bearing_df['max_axial'], label='max_axial (bearing)')
-# plt.plot(fan_bearing_df['extracted_datetime'], fan_bearing_df['max_velocity'], label='max_velocity (bearing)')
-# plt.legend()
-# plt.xlabel('Datetime')
-# plt.ylabel('Value')
-# plt.title('Fan Bearing Analysis')
+# Create a new figure and axes for the fan_bearing plot
+fig_fan_bearing, ax_fan_bearing = plt.subplots()
+# Plotting fan_bearing_df
+plt.plot(fan_bearing_df['extracted_datetime'], fan_bearing_df['max_vertical'], label='max_vertical (bearing)')
+plt.plot(fan_bearing_df['extracted_datetime'], fan_bearing_df['max_horizontal'], label='max_horizontal (bearing)')
+plt.plot(fan_bearing_df['extracted_datetime'], fan_bearing_df['max_axial'], label='max_axial (bearing)')
+plt.plot(fan_bearing_df['extracted_datetime'], fan_bearing_df['max_velocity'], label='max_velocity (bearing)')
+plt.legend()
+plt.xlabel('Datetime')
+plt.ylabel('Value')
+plt.title('Fan Bearing Analysis')
 
-# # Create a new figure and axes for the fan_belt plot
-# fig_fan_belt, ax_fan_belt = plt.subplots()
-# # Plotting fan_belt_df
-# plt.plot(fan_belt_df['extracted_datetime'], fan_belt_df['max_vertical'], label='max_vertical (belt)')
-# plt.plot(fan_belt_df['extracted_datetime'], fan_belt_df['max_horizontal'], label='max_horizontal (belt)')
-# plt.plot(fan_belt_df['extracted_datetime'], fan_belt_df['max_axial'], label='max_axial (belt)')
-# plt.plot(fan_belt_df['extracted_datetime'], fan_belt_df['max_velocity'], label='max_velocity (belt)')
-# plt.legend()
-# plt.xlabel('Datetime')
-# plt.ylabel('Value')
-# plt.title('Fan Belt Analysis')
+# Create a new figure and axes for the fan_belt plot
+fig_fan_belt, ax_fan_belt = plt.subplots()
+# Plotting fan_belt_df
+plt.plot(fan_belt_df['extracted_datetime'], fan_belt_df['max_vertical'], label='max_vertical (belt)')
+plt.plot(fan_belt_df['extracted_datetime'], fan_belt_df['max_horizontal'], label='max_horizontal (belt)')
+plt.plot(fan_belt_df['extracted_datetime'], fan_belt_df['max_axial'], label='max_axial (belt)')
+plt.plot(fan_belt_df['extracted_datetime'], fan_belt_df['max_velocity'], label='max_velocity (belt)')
+plt.legend()
+plt.xlabel('Datetime')
+plt.ylabel('Value')
+plt.title('Fan Belt Analysis')
 
-# # Create a new figure and axes for the fan_flow plot
-# fig_fan_flow, ax_fan_flow = plt.subplots()
-# # Plotting fan_belt_df
-# plt.plot(fan_flow_df['extracted_datetime'], fan_flow_df['max_vertical'], label='max_vertical (flow)')
-# plt.plot(fan_flow_df['extracted_datetime'], fan_flow_df['max_horizontal'], label='max_horizontal (flow)')
-# plt.plot(fan_flow_df['extracted_datetime'], fan_flow_df['max_axial'], label='max_axial (flow)')
-# plt.plot(fan_flow_df['extracted_datetime'], fan_flow_df['max_velocity'], label='max_velocity (flow)')
-# plt.legend()
-# plt.xlabel('Datetime')
-# plt.ylabel('Value')
-# plt.title('Fan Flow Analysis')
+# Create a new figure and axes for the fan_flow plot
+fig_fan_flow, ax_fan_flow = plt.subplots()
+# Plotting fan_belt_df
+plt.plot(fan_flow_df['extracted_datetime'], fan_flow_df['max_vertical'], label='max_vertical (flow)')
+plt.plot(fan_flow_df['extracted_datetime'], fan_flow_df['max_horizontal'], label='max_horizontal (flow)')
+plt.plot(fan_flow_df['extracted_datetime'], fan_flow_df['max_axial'], label='max_axial (flow)')
+plt.plot(fan_flow_df['extracted_datetime'], fan_flow_df['max_velocity'], label='max_velocity (flow)')
+plt.legend()
+plt.xlabel('Datetime')
+plt.ylabel('Value')
+plt.title('Fan Flow Analysis')
 
-# # ----------------------Motor---------------------
-# # Create a new figure and axes for the motor_balancing plot
-# fig_motor_balancing, ax_motor_balancing = plt.subplots()
-# # Plotting fan_balancing_df
-# plt.plot(motor_balancing_df['extracted_datetime'], motor_balancing_df['max_vertical'], label='max_vertical (balancing)')
-# plt.plot(motor_balancing_df['extracted_datetime'], motor_balancing_df['max_horizontal'], label='max_horizontal (balancing)')
-# plt.plot(motor_balancing_df['extracted_datetime'], motor_balancing_df['max_axial'], label='max_axial (balancing)')
-# plt.plot(motor_balancing_df['extracted_datetime'], motor_balancing_df['max_velocity'], label='max_velocity (balancing)')
-# plt.legend()
-# plt.xlabel('Datetime')
-# plt.ylabel('Value')
-# plt.title('Motor Balancing Analysis')
+# ----------------------Motor---------------------
+# Create a new figure and axes for the motor_balancing plot
+fig_motor_balancing, ax_motor_balancing = plt.subplots()
+# Plotting fan_balancing_df
+plt.plot(motor_balancing_df['extracted_datetime'], motor_balancing_df['max_vertical'], label='max_vertical (balancing)')
+plt.plot(motor_balancing_df['extracted_datetime'], motor_balancing_df['max_horizontal'], label='max_horizontal (balancing)')
+plt.plot(motor_balancing_df['extracted_datetime'], motor_balancing_df['max_axial'], label='max_axial (balancing)')
+plt.plot(motor_balancing_df['extracted_datetime'], motor_balancing_df['max_velocity'], label='max_velocity (balancing)')
+plt.legend()
+plt.xlabel('Datetime')
+plt.ylabel('Value')
+plt.title('Motor Balancing Analysis')
 
-# # Create a new figure and axes for the motor_misalignment plot
-# fig_motor_misalignment, ax_motor_misalignment = plt.subplots()
-# # Plotting fan_misalignment_df
-# plt.plot(motor_misalignment_df['extracted_datetime'], motor_misalignment_df['max_vertical'], label='max_vertical (misalignment)')
-# plt.plot(motor_misalignment_df['extracted_datetime'], motor_misalignment_df['max_horizontal'], label='max_horizontal (misalignment)')
-# plt.plot(motor_misalignment_df['extracted_datetime'], motor_misalignment_df['max_axial'], label='max_axial (misalignment)')
-# plt.plot(motor_misalignment_df['extracted_datetime'], motor_misalignment_df['max_velocity'], label='max_velocity (misalignment)')
-# plt.legend()
-# plt.xlabel('Datetime')
-# plt.ylabel('Value')
-# plt.title('Motor Misalignment Analysis')
+# Create a new figure and axes for the motor_misalignment plot
+fig_motor_misalignment, ax_motor_misalignment = plt.subplots()
+# Plotting fan_misalignment_df
+plt.plot(motor_misalignment_df['extracted_datetime'], motor_misalignment_df['max_vertical'], label='max_vertical (misalignment)')
+plt.plot(motor_misalignment_df['extracted_datetime'], motor_misalignment_df['max_horizontal'], label='max_horizontal (misalignment)')
+plt.plot(motor_misalignment_df['extracted_datetime'], motor_misalignment_df['max_axial'], label='max_axial (misalignment)')
+plt.plot(motor_misalignment_df['extracted_datetime'], motor_misalignment_df['max_velocity'], label='max_velocity (misalignment)')
+plt.legend()
+plt.xlabel('Datetime')
+plt.ylabel('Value')
+plt.title('Motor Misalignment Analysis')
 
-# # Create a new figure and axes for the motor_bearing plot
-# fig_motor_bearing, ax_motor_bearing = plt.subplots()
-# # Plotting fan_bearing_df
-# plt.plot(motor_bearing_df['extracted_datetime'], motor_bearing_df['max_vertical'], label='max_vertical (bearing)')
-# plt.plot(motor_bearing_df['extracted_datetime'], motor_bearing_df['max_horizontal'], label='max_horizontal (bearing)')
-# plt.plot(motor_bearing_df['extracted_datetime'], motor_bearing_df['max_axial'], label='max_axial (bearing)')
-# plt.plot(motor_bearing_df['extracted_datetime'], motor_bearing_df['max_velocity'], label='max_velocity (bearing)')
-# plt.legend()
-# plt.xlabel('Datetime')
-# plt.ylabel('Value')
-# plt.title('Motor Bearing Analysis')
+# Create a new figure and axes for the motor_bearing plot
+fig_motor_bearing, ax_motor_bearing = plt.subplots()
+# Plotting fan_bearing_df
+plt.plot(motor_bearing_df['extracted_datetime'], motor_bearing_df['max_vertical'], label='max_vertical (bearing)')
+plt.plot(motor_bearing_df['extracted_datetime'], motor_bearing_df['max_horizontal'], label='max_horizontal (bearing)')
+plt.plot(motor_bearing_df['extracted_datetime'], motor_bearing_df['max_axial'], label='max_axial (bearing)')
+plt.plot(motor_bearing_df['extracted_datetime'], motor_bearing_df['max_velocity'], label='max_velocity (bearing)')
+plt.legend()
+plt.xlabel('Datetime')
+plt.ylabel('Value')
+plt.title('Motor Bearing Analysis')
 
-# # Create a new figure and axes for the motor_belt plot
-# fig_motor_belt, ax_motor_belt = plt.subplots()
-# # Plotting fan_belt_df
-# plt.plot(motor_belt_df['extracted_datetime'], motor_belt_df['max_vertical'], label='max_vertical (belt)')
-# plt.plot(motor_belt_df['extracted_datetime'], motor_belt_df['max_horizontal'], label='max_horizontal (belt)')
-# plt.plot(motor_belt_df['extracted_datetime'], motor_belt_df['max_axial'], label='max_axial (belt)')
-# plt.plot(motor_belt_df['extracted_datetime'], motor_belt_df['max_velocity'], label='max_velocity (belt)')
-# plt.legend()
-# plt.xlabel('Datetime')
-# plt.ylabel('Value')
-# plt.title('Motor Belt Analysis')
+# Create a new figure and axes for the motor_belt plot
+fig_motor_belt, ax_motor_belt = plt.subplots()
+# Plotting fan_belt_df
+plt.plot(motor_belt_df['extracted_datetime'], motor_belt_df['max_vertical'], label='max_vertical (belt)')
+plt.plot(motor_belt_df['extracted_datetime'], motor_belt_df['max_horizontal'], label='max_horizontal (belt)')
+plt.plot(motor_belt_df['extracted_datetime'], motor_belt_df['max_axial'], label='max_axial (belt)')
+plt.plot(motor_belt_df['extracted_datetime'], motor_belt_df['max_velocity'], label='max_velocity (belt)')
+plt.legend()
+plt.xlabel('Datetime')
+plt.ylabel('Value')
+plt.title('Motor Belt Analysis')
 
 latest_records_query_model = """
 WITH cte AS (
@@ -451,49 +451,49 @@ WITH cte AS (
 )
 SELECT mae, health, computation_type, invoked_filename, node_id, sensor_location_name, machine_name, health_type, invocation_timestamp, extracted_datetime
 FROM cte
-WHERE rn = 1 and extracted_datetime >= '2023-10-18 00:00:00' and extracted_datetime <= '2023-11-18 00:00:00'
+WHERE rn = 1 and extracted_datetime >= '2023-09-18 00:00:00' and extracted_datetime <= '2023-11-18 00:00:00'
 ORDER BY extracted_datetime ASC;
 """
 cursor_xswh.execute(latest_records_query_model)
 model_computation_records = cursor_xswh.fetchall()
 
-fan_balancing_6B_Rm1_No1_list = []
-fan_balancing_6B_Rm1_No2_list = []
-fan_balancing_6B_Rm2_No1_list = []
-fan_balancing_6B_Rm2_No2_list = []
-fan_misalignment_6B_Rm1_No1_list = []
-fan_misalignment_6B_Rm1_No2_list = []
-fan_misalignment_6B_Rm2_No1_list = []
-fan_misalignment_6B_Rm2_No2_list = []
-fan_bearing_6B_Rm1_No1_list = []
-fan_bearing_6B_Rm1_No2_list = []
-fan_bearing_6B_Rm2_No1_list = []
-fan_bearing_6B_Rm2_No2_list = []
-fan_flow_6B_Rm1_No1_list = []
-fan_flow_6B_Rm1_No2_list = []
-fan_flow_6B_Rm2_No1_list = []
-fan_flow_6B_Rm2_No2_list = []
-fan_belt_6B_Rm1_No1_list = []
-fan_belt_6B_Rm1_No2_list = []
-fan_belt_6B_Rm2_No1_list = []
-fan_belt_6B_Rm2_No2_list = []
+model_fan_balancing_6B_Rm1_No1_list = []
+model_fan_balancing_6B_Rm1_No2_list = []
+model_fan_balancing_6B_Rm2_No1_list = []
+model_fan_balancing_6B_Rm2_No2_list = []
+model_fan_misalignment_6B_Rm1_No1_list = []
+model_fan_misalignment_6B_Rm1_No2_list = []
+model_fan_misalignment_6B_Rm2_No1_list = []
+model_fan_misalignment_6B_Rm2_No2_list = []
+model_fan_bearing_6B_Rm1_No1_list = []
+model_fan_bearing_6B_Rm1_No2_list = []
+model_fan_bearing_6B_Rm2_No1_list = []
+model_fan_bearing_6B_Rm2_No2_list = []
+model_fan_flow_6B_Rm1_No1_list = []
+model_fan_flow_6B_Rm1_No2_list = []
+model_fan_flow_6B_Rm2_No1_list = []
+model_fan_flow_6B_Rm2_No2_list = []
+model_fan_belt_6B_Rm1_No1_list = []
+model_fan_belt_6B_Rm1_No2_list = []
+model_fan_belt_6B_Rm2_No1_list = []
+model_fan_belt_6B_Rm2_No2_list = []
 
-motor_balancing_6B_Rm1_No1_list = []
-motor_balancing_6B_Rm1_No2_list = []
-motor_balancing_6B_Rm2_No1_list = []
-motor_balancing_6B_Rm2_No2_list = []
-motor_misalignment_6B_Rm1_No1_list = []
-motor_misalignment_6B_Rm1_No2_list = []
-motor_misalignment_6B_Rm2_No1_list = []
-motor_misalignment_6B_Rm2_No2_list = []
-motor_bearing_6B_Rm1_No1_list = []
-motor_bearing_6B_Rm1_No2_list = []
-motor_bearing_6B_Rm2_No1_list = []
-motor_bearing_6B_Rm2_No2_list = []
-motor_belt_6B_Rm1_No1_list = []
-motor_belt_6B_Rm1_No2_list = []
-motor_belt_6B_Rm2_No1_list = []
-motor_belt_6B_Rm2_No2_list = []
+model_motor_balancing_6B_Rm1_No1_list = []
+model_motor_balancing_6B_Rm1_No2_list = []
+model_motor_balancing_6B_Rm2_No1_list = []
+model_motor_balancing_6B_Rm2_No2_list = []
+model_motor_misalignment_6B_Rm1_No1_list = []
+model_motor_misalignment_6B_Rm1_No2_list = []
+model_motor_misalignment_6B_Rm2_No1_list = []
+model_motor_misalignment_6B_Rm2_No2_list = []
+model_motor_bearing_6B_Rm1_No1_list = []
+model_motor_bearing_6B_Rm1_No2_list = []
+model_motor_bearing_6B_Rm2_No1_list = []
+model_motor_bearing_6B_Rm2_No2_list = []
+model_motor_belt_6B_Rm1_No1_list = []
+model_motor_belt_6B_Rm1_No2_list = []
+model_motor_belt_6B_Rm2_No1_list = []
+model_motor_belt_6B_Rm2_No2_list = []
 
 for record in model_computation_records:
     mae = record[0]
@@ -504,222 +504,253 @@ for record in model_computation_records:
     if location_name == 'Fan-DE':
         if health_type == 'balancing':
             if machine_name == '6B ISO Rm 1 Fan no.1':
-                fan_balancing_6B_Rm1_No1_list.append([mae, extracted_datetime])
+                model_fan_balancing_6B_Rm1_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 1 Fan no.2':
-                fan_balancing_6B_Rm1_No2_list.append([mae, extracted_datetime])
+                model_fan_balancing_6B_Rm1_No2_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.1':
-                fan_balancing_6B_Rm2_No1_list.append([mae, extracted_datetime])
+                model_fan_balancing_6B_Rm2_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.2':
-                fan_balancing_6B_Rm2_No2_list.append([mae, extracted_datetime])
+                model_fan_balancing_6B_Rm2_No2_list.append([mae, extracted_datetime])
 
         elif health_type == 'misalignment':
             if machine_name == '6B ISO Rm 1 Fan no.1':
-                fan_misalignment_6B_Rm1_No1_list.append([mae, extracted_datetime])
+                model_fan_misalignment_6B_Rm1_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 1 Fan no.2':
-                fan_misalignment_6B_Rm1_No2_list.append([mae, extracted_datetime])
+                model_fan_misalignment_6B_Rm1_No2_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.1':
-                fan_misalignment_6B_Rm2_No1_list.append([mae, extracted_datetime])
+                model_fan_misalignment_6B_Rm2_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.2':
-                fan_misalignment_6B_Rm2_No2_list.append([mae, extracted_datetime])
+                model_fan_misalignment_6B_Rm2_No2_list.append([mae, extracted_datetime])
 
         elif health_type == 'bearing':
             if machine_name == '6B ISO Rm 1 Fan no.1':
-                fan_bearing_6B_Rm1_No1_list.append([mae, extracted_datetime])
+                model_fan_bearing_6B_Rm1_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 1 Fan no.2':
-                fan_bearing_6B_Rm1_No2_list.append([mae, extracted_datetime])
+                model_fan_bearing_6B_Rm1_No2_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.1':
-                fan_bearing_6B_Rm2_No1_list.append([mae, extracted_datetime])
+                model_fan_bearing_6B_Rm2_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.2':
-                fan_bearing_6B_Rm2_No2_list.append([mae, extracted_datetime])
+                model_fan_bearing_6B_Rm2_No2_list.append([mae, extracted_datetime])
 
         elif health_type == 'belt':
             if machine_name == '6B ISO Rm 1 Fan no.1':
-                fan_belt_6B_Rm1_No1_list.append([mae, extracted_datetime])
+                model_fan_belt_6B_Rm1_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 1 Fan no.2':
-                fan_belt_6B_Rm1_No2_list.append([mae, extracted_datetime])
+                model_fan_belt_6B_Rm1_No2_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.1':
-                fan_belt_6B_Rm2_No1_list.append([mae, extracted_datetime])
+                model_fan_belt_6B_Rm2_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.2':
-                fan_belt_6B_Rm2_No2_list.append([mae, extracted_datetime])
+                model_fan_belt_6B_Rm2_No2_list.append([mae, extracted_datetime])
 
         elif health_type == 'flow':
             if machine_name == '6B ISO Rm 1 Fan no.1':
-                fan_flow_6B_Rm1_No1_list.append([mae, extracted_datetime])
+                model_fan_flow_6B_Rm1_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 1 Fan no.2':
-                fan_flow_6B_Rm1_No2_list.append([mae, extracted_datetime])
+                model_fan_flow_6B_Rm1_No2_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.1':
-                fan_flow_6B_Rm2_No1_list.append([mae, extracted_datetime])
+                model_fan_flow_6B_Rm2_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.2':
-                fan_flow_6B_Rm2_No2_list.append([mae, extracted_datetime])
+                model_fan_flow_6B_Rm2_No2_list.append([mae, extracted_datetime])
         
     elif location_name == 'Motor':
         if health_type == 'balancing':
             if machine_name == '6B ISO Rm 1 Fan no.1':
-                motor_balancing_6B_Rm1_No1_list.append([mae, extracted_datetime])
+                model_motor_balancing_6B_Rm1_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 1 Fan no.2':
-                motor_balancing_6B_Rm1_No2_list.append([mae, extracted_datetime])
+                model_motor_balancing_6B_Rm1_No2_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.1':
-                motor_balancing_6B_Rm2_No1_list.append([mae, extracted_datetime])
+                model_motor_balancing_6B_Rm2_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.2':
-                motor_balancing_6B_Rm2_No2_list.append([mae, extracted_datetime])
+                model_motor_balancing_6B_Rm2_No2_list.append([mae, extracted_datetime])
 
         elif health_type == 'misalignment':
             if machine_name == '6B ISO Rm 1 Fan no.1':
-                motor_misalignment_6B_Rm1_No1_list.append([mae, extracted_datetime])
+                model_motor_misalignment_6B_Rm1_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 1 Fan no.2':
-                motor_misalignment_6B_Rm1_No2_list.append([mae, extracted_datetime])
+                model_motor_misalignment_6B_Rm1_No2_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.1':
-                motor_misalignment_6B_Rm2_No1_list.append([mae, extracted_datetime])
+                model_motor_misalignment_6B_Rm2_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.2':
-                motor_misalignment_6B_Rm2_No2_list.append([mae, extracted_datetime])
+                model_motor_misalignment_6B_Rm2_No2_list.append([mae, extracted_datetime])
 
         elif health_type == 'bearing':
             if machine_name == '6B ISO Rm 1 Fan no.1':
-                motor_bearing_6B_Rm1_No1_list.append([mae, extracted_datetime])
+                model_motor_bearing_6B_Rm1_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 1 Fan no.2':
-                motor_bearing_6B_Rm1_No2_list.append([mae, extracted_datetime])
+                model_motor_bearing_6B_Rm1_No2_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.1':
-                motor_bearing_6B_Rm2_No1_list.append([mae, extracted_datetime])
+                model_motor_bearing_6B_Rm2_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.2':
-                motor_bearing_6B_Rm2_No2_list.append([mae, extracted_datetime])
+                model_motor_bearing_6B_Rm2_No2_list.append([mae, extracted_datetime])
 
         elif health_type == 'belt':
             if machine_name == '6B ISO Rm 1 Fan no.1':
-                motor_belt_6B_Rm1_No1_list.append([mae, extracted_datetime])
+                model_motor_belt_6B_Rm1_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 1 Fan no.2':
-                motor_belt_6B_Rm1_No2_list.append([mae, extracted_datetime])
+                model_motor_belt_6B_Rm1_No2_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.1':
-                motor_belt_6B_Rm2_No1_list.append([mae, extracted_datetime])
+                model_motor_belt_6B_Rm2_No1_list.append([mae, extracted_datetime])
             elif machine_name == '6B ISO Rm 2 Fan no.2':
-                motor_belt_6B_Rm2_No2_list.append([mae, extracted_datetime])
+                model_motor_belt_6B_Rm2_No2_list.append([mae, extracted_datetime])
 
 
 # Fan
-fan_balancing_6B_Rm1_No1_df = pd.DataFrame(fan_balancing_6B_Rm1_No1_list, columns=['6B_Rm1_No1_mae', '6B_Rm1_No1_extracted_datetime'])
-fan_balancing_6B_Rm1_No2_df = pd.DataFrame(fan_balancing_6B_Rm1_No2_list, columns=['6B_Rm1_No2_mae', '6B_Rm1_No2_extracted_datetime'])
-fan_balancing_6B_Rm2_No1_df = pd.DataFrame(fan_balancing_6B_Rm2_No1_list, columns=['6B_Rm2_No1_mae', '6B_Rm2_No1_extracted_datetime'])
-fan_balancing_6B_Rm2_No2_df = pd.DataFrame(fan_balancing_6B_Rm2_No2_list, columns=['6B_Rm2_No2_mae', '6B_Rm2_No2_extracted_datetime'])
-# Concatenate the DataFrames into a single DataFrame
-fan_balancing_df = pd.concat([
-    fan_balancing_6B_Rm1_No1_df, 
-    fan_balancing_6B_Rm1_No2_df, 
-    fan_balancing_6B_Rm2_No1_df, 
-    fan_balancing_6B_Rm2_No2_df], 
-    axis=1)
+model_fan_balancing_6B_Rm1_No1_df = pd.DataFrame(model_fan_balancing_6B_Rm1_No1_list, columns=['6B_Rm1_No1_mae', '6B_Rm1_No1_extracted_datetime'])
+model_fan_balancing_6B_Rm1_No2_df = pd.DataFrame(model_fan_balancing_6B_Rm1_No2_list, columns=['6B_Rm1_No2_mae', '6B_Rm1_No2_extracted_datetime'])
+model_fan_balancing_6B_Rm2_No1_df = pd.DataFrame(model_fan_balancing_6B_Rm2_No1_list, columns=['6B_Rm2_No1_mae', '6B_Rm2_No1_extracted_datetime'])
+model_fan_balancing_6B_Rm2_No2_df = pd.DataFrame(model_fan_balancing_6B_Rm2_No2_list, columns=['6B_Rm2_No2_mae', '6B_Rm2_No2_extracted_datetime'])
 
-fan_misalignment_6B_Rm1_No1_df = pd.DataFrame(fan_misalignment_6B_Rm1_No1_list, columns=['6B_Rm1_No1 mae', 'extracted_datetime'])
-fan_misalignment_6B_Rm1_No2_df = pd.DataFrame(fan_misalignment_6B_Rm1_No2_list, columns=['6B_Rm1_No2 mae', 'extracted_datetime'])
-fan_misalignment_6B_Rm2_No1_df = pd.DataFrame(fan_misalignment_6B_Rm2_No1_list, columns=['6B_Rm2_No1 mae', 'extracted_datetime'])
-fan_misalignment_6B_Rm2_No2_df = pd.DataFrame(fan_misalignment_6B_Rm2_No2_list, columns=['6B_Rm2_No2 mae', 'extracted_datetime'])
-# Concatenate the DataFrames into a single DataFrame
-fan_misalignment_df = pd.concat([
-    fan_misalignment_6B_Rm1_No1_df, 
-    fan_misalignment_6B_Rm1_No2_df, 
-    fan_misalignment_6B_Rm2_No1_df, 
-    fan_misalignment_6B_Rm2_No2_df], 
-    axis=1)
+model_fan_misalignment_6B_Rm1_No1_df = pd.DataFrame(model_fan_misalignment_6B_Rm1_No1_list, columns=['6B_Rm1_No1_mae', '6B_Rm1_No1_extracted_datetime'])
+model_fan_misalignment_6B_Rm1_No2_df = pd.DataFrame(model_fan_misalignment_6B_Rm1_No2_list, columns=['6B_Rm1_No2_mae', '6B_Rm1_No2_extracted_datetime'])
+model_fan_misalignment_6B_Rm2_No1_df = pd.DataFrame(model_fan_misalignment_6B_Rm2_No1_list, columns=['6B_Rm2_No1_mae', '6B_Rm2_No1_extracted_datetime'])
+model_fan_misalignment_6B_Rm2_No2_df = pd.DataFrame(model_fan_misalignment_6B_Rm2_No2_list, columns=['6B_Rm2_No2_mae', '6B_Rm2_No2_extracted_datetime'])
 
-fan_bearing_6B_Rm1_No1_df = pd.DataFrame(fan_bearing_6B_Rm1_No1_list, columns=['6B_Rm1_No1 mae', 'extracted_datetime'])
-fan_bearing_6B_Rm1_No2_df = pd.DataFrame(fan_bearing_6B_Rm1_No2_list, columns=['6B_Rm1_No2 mae', 'extracted_datetime'])
-fan_bearing_6B_Rm2_No1_df = pd.DataFrame(fan_bearing_6B_Rm2_No1_list, columns=['6B_Rm2_No1 mae', 'extracted_datetime'])
-fan_bearing_6B_Rm2_No2_df = pd.DataFrame(fan_bearing_6B_Rm2_No2_list, columns=['6B_Rm2_No2 mae', 'extracted_datetime'])
-# Concatenate the DataFrames into a single DataFrame
-fan_bearing_df = pd.concat([
-    fan_bearing_6B_Rm1_No1_df, 
-    fan_bearing_6B_Rm1_No2_df, 
-    fan_bearing_6B_Rm2_No1_df, 
-    fan_bearing_6B_Rm2_No2_df], 
-    axis=1)
+model_fan_bearing_6B_Rm1_No1_df = pd.DataFrame(model_fan_bearing_6B_Rm1_No1_list, columns=['6B_Rm1_No1_mae', '6B_Rm1_No1_extracted_datetime'])
+model_fan_bearing_6B_Rm1_No2_df = pd.DataFrame(model_fan_bearing_6B_Rm1_No2_list, columns=['6B_Rm1_No2_mae', '6B_Rm1_No2_extracted_datetime'])
+model_fan_bearing_6B_Rm2_No1_df = pd.DataFrame(model_fan_bearing_6B_Rm2_No1_list, columns=['6B_Rm2_No1_mae', '6B_Rm2_No1_extracted_datetime'])
+model_fan_bearing_6B_Rm2_No2_df = pd.DataFrame(model_fan_bearing_6B_Rm2_No2_list, columns=['6B_Rm2_No2_mae', '6B_Rm2_No2_extracted_datetime'])
 
-fan_flow_6B_Rm1_No1_df = pd.DataFrame(fan_flow_6B_Rm1_No1_list, columns=['6B_Rm1_No1 mae', 'extracted_datetime'])
-fan_flow_6B_Rm1_No2_df = pd.DataFrame(fan_flow_6B_Rm1_No2_list, columns=['6B_Rm1_No2 mae', 'extracted_datetime'])
-fan_flow_6B_Rm2_No1_df = pd.DataFrame(fan_flow_6B_Rm2_No1_list, columns=['6B_Rm2_No1 mae', 'extracted_datetime'])
-fan_flow_6B_Rm2_No2_df = pd.DataFrame(fan_flow_6B_Rm2_No2_list, columns=['6B_Rm2_No2 mae', 'extracted_datetime'])
-# Concatenate the DataFrames into a single DataFrame
-fan_flow_df = pd.concat([
-    fan_flow_6B_Rm1_No1_df, 
-    fan_flow_6B_Rm1_No2_df, 
-    fan_flow_6B_Rm2_No1_df, 
-    fan_flow_6B_Rm2_No2_df], 
-    axis=1)
+model_fan_flow_6B_Rm1_No1_df = pd.DataFrame(model_fan_flow_6B_Rm1_No1_list, columns=['6B_Rm1_No1_mae', '6B_Rm1_No1_extracted_datetime'])
+model_fan_flow_6B_Rm1_No2_df = pd.DataFrame(model_fan_flow_6B_Rm1_No2_list, columns=['6B_Rm1_No2_mae', '6B_Rm1_No2_extracted_datetime'])
+model_fan_flow_6B_Rm2_No1_df = pd.DataFrame(model_fan_flow_6B_Rm2_No1_list, columns=['6B_Rm2_No1_mae', '6B_Rm2_No1_extracted_datetime'])
+model_fan_flow_6B_Rm2_No2_df = pd.DataFrame(model_fan_flow_6B_Rm2_No2_list, columns=['6B_Rm2_No2_mae', '6B_Rm2_No2_extracted_datetime'])
 
-fan_belt_6B_Rm1_No1_df = pd.DataFrame(fan_belt_6B_Rm1_No1_list, columns=['6B_Rm1_No1 mae', 'extracted_datetime'])
-fan_belt_6B_Rm1_No2_df = pd.DataFrame(fan_belt_6B_Rm1_No2_list, columns=['6B_Rm1_No2 mae', 'extracted_datetime'])
-fan_belt_6B_Rm2_No1_df = pd.DataFrame(fan_belt_6B_Rm2_No1_list, columns=['6B_Rm2_No1 mae', 'extracted_datetime'])
-fan_belt_6B_Rm2_No2_df = pd.DataFrame(fan_belt_6B_Rm2_No2_list, columns=['6B_Rm2_No2 mae', 'extracted_datetime'])
-# Concatenate the DataFrames into a single DataFrame
-fan_belt_df = pd.concat([
-    fan_belt_6B_Rm1_No1_df, 
-    fan_belt_6B_Rm1_No2_df, 
-    fan_belt_6B_Rm2_No1_df, 
-    fan_belt_6B_Rm2_No2_df], 
-    axis=1)
+model_fan_belt_6B_Rm1_No1_df = pd.DataFrame(model_fan_belt_6B_Rm1_No1_list, columns=['6B_Rm1_No1_mae', '6B_Rm1_No1_extracted_datetime'])
+model_fan_belt_6B_Rm1_No2_df = pd.DataFrame(model_fan_belt_6B_Rm1_No2_list, columns=['6B_Rm1_No2_mae', '6B_Rm1_No2_extracted_datetime'])
+model_fan_belt_6B_Rm2_No1_df = pd.DataFrame(model_fan_belt_6B_Rm2_No1_list, columns=['6B_Rm2_No1_mae', '6B_Rm2_No1_extracted_datetime'])
+model_fan_belt_6B_Rm2_No2_df = pd.DataFrame(model_fan_belt_6B_Rm2_No2_list, columns=['6B_Rm2_No2_mae', '6B_Rm2_No2_extracted_datetime'])
 
 # Motor
-motor_balancing_6B_Rm1_No1_df = pd.DataFrame(motor_balancing_6B_Rm1_No1_list, columns=['mae', 'extracted_datetime'])
-motor_balancing_6B_Rm1_No2_df = pd.DataFrame(motor_balancing_6B_Rm1_No2_list, columns=['mae', 'extracted_datetime'])
-motor_balancing_6B_Rm2_No1_df = pd.DataFrame(motor_balancing_6B_Rm2_No1_list, columns=['mae', 'extracted_datetime'])
-motor_balancing_6B_Rm2_No2_df = pd.DataFrame(motor_balancing_6B_Rm2_No2_list, columns=['mae', 'extracted_datetime'])
-# Concatenate the DataFrames into a single DataFrame
-motor_balancing_df = pd.concat([
-    motor_balancing_6B_Rm1_No1_df, 
-    motor_balancing_6B_Rm1_No2_df, 
-    motor_balancing_6B_Rm2_No1_df, 
-    motor_balancing_6B_Rm2_No2_df], 
-    ignore_index=True)
+model_motor_balancing_6B_Rm1_No1_df = pd.DataFrame(model_motor_balancing_6B_Rm1_No1_list, columns=['6B_Rm1_No1_mae', '6B_Rm1_No1_extracted_datetime'])
+model_motor_balancing_6B_Rm1_No2_df = pd.DataFrame(model_motor_balancing_6B_Rm1_No2_list, columns=['6B_Rm1_No2_mae', '6B_Rm1_No2_extracted_datetime'])
+model_motor_balancing_6B_Rm2_No1_df = pd.DataFrame(model_motor_balancing_6B_Rm2_No1_list, columns=['6B_Rm2_No1_mae', '6B_Rm2_No1_extracted_datetime'])
+model_motor_balancing_6B_Rm2_No2_df = pd.DataFrame(model_motor_balancing_6B_Rm2_No2_list, columns=['6B_Rm2_No2_mae', '6B_Rm2_No2_extracted_datetime'])
 
-motor_misalignment_6B_Rm1_No1_df = pd.DataFrame(motor_misalignment_6B_Rm1_No1_list, columns=['mae', 'extracted_datetime'])
-motor_misalignment_6B_Rm1_No2_df = pd.DataFrame(motor_misalignment_6B_Rm1_No2_list, columns=['mae', 'extracted_datetime'])
-motor_misalignment_6B_Rm2_No1_df = pd.DataFrame(motor_misalignment_6B_Rm2_No1_list, columns=['mae', 'extracted_datetime'])
-motor_misalignment_6B_Rm2_No2_df = pd.DataFrame(motor_misalignment_6B_Rm2_No2_list, columns=['mae', 'extracted_datetime'])
-# Concatenate the DataFrames into a single DataFrame
-motor_misalignment_df = pd.concat([
-    motor_misalignment_6B_Rm1_No1_df, 
-    motor_misalignment_6B_Rm1_No2_df, 
-    motor_misalignment_6B_Rm2_No1_df, 
-    motor_misalignment_6B_Rm2_No2_df], 
-    ignore_index=True)
+model_motor_misalignment_6B_Rm1_No1_df = pd.DataFrame(model_motor_misalignment_6B_Rm1_No1_list, columns=['6B_Rm1_No1_mae', '6B_Rm1_No1_extracted_datetime'])
+model_motor_misalignment_6B_Rm1_No2_df = pd.DataFrame(model_motor_misalignment_6B_Rm1_No2_list, columns=['6B_Rm1_No2_mae', '6B_Rm1_No2_extracted_datetime'])
+model_motor_misalignment_6B_Rm2_No1_df = pd.DataFrame(model_motor_misalignment_6B_Rm2_No1_list, columns=['6B_Rm2_No1_mae', '6B_Rm2_No1_extracted_datetime'])
+model_motor_misalignment_6B_Rm2_No2_df = pd.DataFrame(model_motor_misalignment_6B_Rm2_No2_list, columns=['6B_Rm2_No2_mae', '6B_Rm2_No2_extracted_datetime'])
 
-motor_bearing_6B_Rm1_No1_df = pd.DataFrame(motor_bearing_6B_Rm1_No1_list, columns=['mae', 'extracted_datetime'])
-motor_bearing_6B_Rm1_No2_df = pd.DataFrame(motor_bearing_6B_Rm1_No2_list, columns=['mae', 'extracted_datetime'])
-motor_bearing_6B_Rm2_No1_df = pd.DataFrame(motor_bearing_6B_Rm2_No1_list, columns=['mae', 'extracted_datetime'])
-motor_bearing_6B_Rm2_No2_df = pd.DataFrame(motor_bearing_6B_Rm2_No2_list, columns=['mae', 'extracted_datetime'])
-# Concatenate the DataFrames into a single DataFrame
-motor_bearing_df = pd.concat([
-    motor_bearing_6B_Rm1_No1_df, 
-    motor_bearing_6B_Rm1_No2_df, 
-    motor_bearing_6B_Rm2_No1_df, 
-    motor_bearing_6B_Rm2_No2_df], 
-    ignore_index=True)
+model_motor_bearing_6B_Rm1_No1_df = pd.DataFrame(model_motor_bearing_6B_Rm1_No1_list, columns=['6B_Rm1_No1_mae', '6B_Rm1_No1_extracted_datetime'])
+model_motor_bearing_6B_Rm1_No2_df = pd.DataFrame(model_motor_bearing_6B_Rm1_No2_list, columns=['6B_Rm1_No2_mae', '6B_Rm1_No2_extracted_datetime'])
+model_motor_bearing_6B_Rm2_No1_df = pd.DataFrame(model_motor_bearing_6B_Rm2_No1_list, columns=['6B_Rm2_No1_mae', '6B_Rm2_No1_extracted_datetime'])
+model_motor_bearing_6B_Rm2_No2_df = pd.DataFrame(model_motor_bearing_6B_Rm2_No2_list, columns=['6B_Rm2_No2_mae', '6B_Rm2_No2_extracted_datetime'])
 
-motor_belt_6B_Rm1_No1_df = pd.DataFrame(motor_belt_6B_Rm1_No1_list, columns=['mae', 'extracted_datetime'])
-motor_belt_6B_Rm1_No2_df = pd.DataFrame(motor_belt_6B_Rm1_No2_list, columns=['mae', 'extracted_datetime'])
-motor_belt_6B_Rm2_No1_df = pd.DataFrame(motor_belt_6B_Rm2_No1_list, columns=['mae', 'extracted_datetime'])
-motor_belt_6B_Rm2_No2_df = pd.DataFrame(motor_belt_6B_Rm2_No2_list, columns=['mae', 'extracted_datetime'])
-# Concatenate the DataFrames into a single DataFrame
-motor_belt_df = pd.concat([
-    motor_belt_6B_Rm1_No1_df, 
-    motor_belt_6B_Rm1_No2_df, 
-    motor_belt_6B_Rm2_No1_df, 
-    motor_belt_6B_Rm2_No2_df], 
-    ignore_index=True)
+model_motor_belt_6B_Rm1_No1_df = pd.DataFrame(model_motor_belt_6B_Rm1_No1_list, columns=['6B_Rm1_No1_mae', '6B_Rm1_No1_extracted_datetime'])
+model_motor_belt_6B_Rm1_No2_df = pd.DataFrame(model_motor_belt_6B_Rm1_No2_list, columns=['6B_Rm1_No2_mae', '6B_Rm1_No2_extracted_datetime'])
+model_motor_belt_6B_Rm2_No1_df = pd.DataFrame(model_motor_belt_6B_Rm2_No1_list, columns=['6B_Rm2_No1_mae', '6B_Rm2_No1_extracted_datetime'])
+model_motor_belt_6B_Rm2_No2_df = pd.DataFrame(model_motor_belt_6B_Rm2_No2_list, columns=['6B_Rm2_No2_mae', '6B_Rm2_No2_extracted_datetime'])
 
-# print(fan_balancing_6B_Rm1_No1_df)
-# print(fan_balancing_6B_Rm1_No2_df)
-# print(fan_balancing_6B_Rm2_No1_df)
-# print(fan_balancing_6B_Rm2_No2_df)
-print(fan_balancing_df)
-# Create a new figure and axes for the fan_balancing plot
-fig_mae, ax_mae = plt.subplots()
-# Plotting fan_balancing_df
-plt.plot(fan_balancing_df['6B_Rm1_No1_extracted_datetime'], fan_balancing_df['6B_Rm1_No1_mae'], label='fan 6B_Rm1_No1 mae (balancing)')
-plt.plot(fan_balancing_df['6B_Rm1_No2_extracted_datetime'], fan_balancing_df['6B_Rm1_No2_mae'], label='fan 6B_Rm1_No2 mae (balancing)')
-plt.plot(fan_balancing_df['6B_Rm2_No1_extracted_datetime'], fan_balancing_df['6B_Rm2_No1_mae'], label='fan 6B_Rm2_No1 mae (balancing)')
-plt.plot(fan_balancing_df['6B_Rm2_No2_extracted_datetime'], fan_balancing_df['6B_Rm2_No2_mae'], label='fan 6B_Rm2_No2 mae (balancing)')
-plt.legend()
+import matplotlib.pyplot as plt
+
+# Fan
+fig_model_fan_balancing, ax_model_fan_balancing = plt.subplots()
+plt.plot(model_fan_balancing_6B_Rm1_No1_df['6B_Rm1_No1_extracted_datetime'], model_fan_balancing_6B_Rm1_No1_df['6B_Rm1_No1_mae'], label='6B_Rm1_No1')
+plt.plot(model_fan_balancing_6B_Rm1_No2_df['6B_Rm1_No2_extracted_datetime'], model_fan_balancing_6B_Rm1_No2_df['6B_Rm1_No2_mae'], label='6B_Rm1_No2')
+plt.plot(model_fan_balancing_6B_Rm2_No1_df['6B_Rm2_No1_extracted_datetime'], model_fan_balancing_6B_Rm2_No1_df['6B_Rm2_No1_mae'], label='6B_Rm2_No1')
+plt.plot(model_fan_balancing_6B_Rm2_No2_df['6B_Rm2_No2_extracted_datetime'], model_fan_balancing_6B_Rm2_No2_df['6B_Rm2_No2_mae'], label='6B_Rm2_No2')
 plt.xlabel('Datetime')
-plt.ylabel('Mae')
-plt.title('MAE Analysis')
+plt.ylabel('MAE')
+plt.grid()
+plt.tight_layout()
+plt.title('Model Prediction - Fan Balancing')
+plt.legend()
 
-# Displaying both plots
+fig_model_fan_misalignment, ax_model_fan_misalignment = plt.subplots()
+plt.plot(model_fan_misalignment_6B_Rm1_No1_df['6B_Rm1_No1_extracted_datetime'], model_fan_misalignment_6B_Rm1_No1_df['6B_Rm1_No1_mae'], label='6B_Rm1_No1')
+plt.plot(model_fan_misalignment_6B_Rm1_No2_df['6B_Rm1_No2_extracted_datetime'], model_fan_misalignment_6B_Rm1_No2_df['6B_Rm1_No2_mae'], label='6B_Rm1_No2')
+plt.plot(model_fan_misalignment_6B_Rm2_No1_df['6B_Rm2_No1_extracted_datetime'], model_fan_misalignment_6B_Rm2_No1_df['6B_Rm2_No1_mae'], label='6B_Rm2_No1')
+plt.plot(model_fan_misalignment_6B_Rm2_No2_df['6B_Rm2_No2_extracted_datetime'], model_fan_misalignment_6B_Rm2_No2_df['6B_Rm2_No2_mae'], label='6B_Rm2_No2')
+plt.xlabel('Datetime')
+plt.ylabel('MAE')
+plt.grid()
+plt.tight_layout()
+plt.title('Model Prediction - Fan Misalignment')
+plt.legend()
+
+fig_model_fan_bearing, ax_model_fan_bearing = plt.subplots()
+plt.plot(model_fan_bearing_6B_Rm1_No1_df['6B_Rm1_No1_extracted_datetime'], model_fan_bearing_6B_Rm1_No1_df['6B_Rm1_No1_mae'], label='6B_Rm1_No1')
+plt.plot(model_fan_bearing_6B_Rm1_No2_df['6B_Rm1_No2_extracted_datetime'], model_fan_bearing_6B_Rm1_No2_df['6B_Rm1_No2_mae'], label='6B_Rm1_No2')
+plt.plot(model_fan_bearing_6B_Rm2_No1_df['6B_Rm2_No1_extracted_datetime'], model_fan_bearing_6B_Rm2_No1_df['6B_Rm2_No1_mae'], label='6B_Rm2_No1')
+plt.plot(model_fan_bearing_6B_Rm2_No2_df['6B_Rm2_No2_extracted_datetime'], model_fan_bearing_6B_Rm2_No2_df['6B_Rm2_No2_mae'], label='6B_Rm2_No2')
+plt.xlabel('Datetime')
+plt.ylabel('MAE')
+plt.grid()
+plt.tight_layout()
+plt.title('Model Prediction - Fan Bearing')
+plt.legend()
+
+fig_model_fan_flow, ax_model_fan_flow = plt.subplots()
+plt.plot(model_fan_flow_6B_Rm1_No1_df['6B_Rm1_No1_extracted_datetime'], model_fan_flow_6B_Rm1_No1_df['6B_Rm1_No1_mae'], label='6B_Rm1_No1')
+plt.plot(model_fan_flow_6B_Rm1_No2_df['6B_Rm1_No2_extracted_datetime'], model_fan_flow_6B_Rm1_No2_df['6B_Rm1_No2_mae'], label='6B_Rm1_No2')
+plt.plot(model_fan_flow_6B_Rm2_No1_df['6B_Rm2_No1_extracted_datetime'], model_fan_flow_6B_Rm2_No1_df['6B_Rm2_No1_mae'], label='6B_Rm2_No1')
+plt.plot(model_fan_flow_6B_Rm2_No2_df['6B_Rm2_No2_extracted_datetime'], model_fan_flow_6B_Rm2_No2_df['6B_Rm2_No2_mae'], label='6B_Rm2_No2')
+plt.xlabel('Datetime')
+plt.ylabel('MAE')
+plt.grid()
+plt.tight_layout()
+plt.title('Model Prediction - Fan Flow')
+plt.legend()
+
+fig_model_fan_belt, ax_model_fan_belt = plt.subplots()
+plt.plot(model_fan_belt_6B_Rm1_No1_df['6B_Rm1_No1_extracted_datetime'], model_fan_belt_6B_Rm1_No1_df['6B_Rm1_No1_mae'], label='6B_Rm1_No1')
+plt.plot(model_fan_belt_6B_Rm1_No2_df['6B_Rm1_No2_extracted_datetime'], model_fan_belt_6B_Rm1_No2_df['6B_Rm1_No2_mae'], label='6B_Rm1_No2')
+plt.plot(model_fan_belt_6B_Rm2_No1_df['6B_Rm2_No1_extracted_datetime'], model_fan_belt_6B_Rm2_No1_df['6B_Rm2_No1_mae'], label='6B_Rm2_No1')
+plt.plot(model_fan_belt_6B_Rm2_No2_df['6B_Rm2_No2_extracted_datetime'], model_fan_belt_6B_Rm2_No2_df['6B_Rm2_No2_mae'], label='6B_Rm2_No2')
+plt.xlabel('Datetime')
+plt.ylabel('MAE')
+plt.grid()
+plt.tight_layout()
+plt.title('Model Prediction - Fan Belt')
+plt.legend()
+
+# Motor
+fig_model_motor_balancing, ax_model_motor_balancing = plt.subplots()
+plt.plot(model_motor_balancing_6B_Rm1_No1_df['6B_Rm1_No1_extracted_datetime'], model_motor_balancing_6B_Rm1_No1_df['6B_Rm1_No1_mae'], label='6B_Rm1_No1')
+plt.plot(model_motor_balancing_6B_Rm1_No2_df['6B_Rm1_No2_extracted_datetime'], model_motor_balancing_6B_Rm1_No2_df['6B_Rm1_No2_mae'], label='6B_Rm1_No2')
+plt.plot(model_motor_balancing_6B_Rm2_No1_df['6B_Rm2_No1_extracted_datetime'], model_motor_balancing_6B_Rm2_No1_df['6B_Rm2_No1_mae'], label='6B_Rm2_No1')
+plt.plot(model_motor_balancing_6B_Rm2_No2_df['6B_Rm2_No2_extracted_datetime'], model_motor_balancing_6B_Rm2_No2_df['6B_Rm2_No2_mae'], label='6B_Rm2_No2')
+plt.xlabel('Datetime')
+plt.ylabel('MAE')
+plt.grid()
+plt.tight_layout()
+plt.title('Model Prediction - Motor Balancing')
+plt.legend()
+
+fig_model_motor_misalignment, ax_model_motor_misalignment = plt.subplots()
+plt.plot(model_motor_misalignment_6B_Rm1_No1_df['6B_Rm1_No1_extracted_datetime'], model_motor_misalignment_6B_Rm1_No1_df['6B_Rm1_No1_mae'], label='6B_Rm1_No1')
+plt.plot(model_motor_misalignment_6B_Rm1_No2_df['6B_Rm1_No2_extracted_datetime'], model_motor_misalignment_6B_Rm1_No2_df['6B_Rm1_No2_mae'], label='6B_Rm1_No2')
+plt.plot(model_motor_misalignment_6B_Rm2_No1_df['6B_Rm2_No1_extracted_datetime'], model_motor_misalignment_6B_Rm2_No1_df['6B_Rm2_No1_mae'], label='6B_Rm2_No1')
+plt.plot(model_motor_misalignment_6B_Rm2_No2_df['6B_Rm2_No2_extracted_datetime'], model_motor_misalignment_6B_Rm2_No2_df['6B_Rm2_No2_mae'], label='6B_Rm2_No2')
+plt.xlabel('Datetime')
+plt.ylabel('MAE')
+plt.grid()
+plt.tight_layout()
+plt.title('Model Prediction - Motor Misalignment')
+plt.legend()
+
+fig_model_motor_bearing, ax_model_motor_bearing = plt.subplots()
+plt.plot(model_motor_bearing_6B_Rm1_No1_df['6B_Rm1_No1_extracted_datetime'], model_motor_bearing_6B_Rm1_No1_df['6B_Rm1_No1_mae'], label='6B_Rm1_No1')
+plt.plot(model_motor_bearing_6B_Rm1_No2_df['6B_Rm1_No2_extracted_datetime'], model_motor_bearing_6B_Rm1_No2_df['6B_Rm1_No2_mae'], label='6B_Rm1_No2')
+plt.plot(model_motor_bearing_6B_Rm2_No1_df['6B_Rm2_No1_extracted_datetime'], model_motor_bearing_6B_Rm2_No1_df['6B_Rm2_No1_mae'], label='6B_Rm2_No1')
+plt.plot(model_motor_bearing_6B_Rm2_No2_df['6B_Rm2_No2_extracted_datetime'], model_motor_bearing_6B_Rm2_No2_df['6B_Rm2_No2_mae'], label='6B_Rm2_No2')
+plt.xlabel('Datetime')
+plt.ylabel('MAE')
+plt.grid()
+plt.tight_layout()
+plt.title('Model Prediction - Motor Bearing')
+plt.legend()
+
+fig_model_motor_belt, ax_model_motor_belt = plt.subplots()
+plt.plot(model_motor_belt_6B_Rm1_No1_df['6B_Rm1_No1_extracted_datetime'], model_motor_belt_6B_Rm1_No1_df['6B_Rm1_No1_mae'], label='6B_Rm1_No1')
+plt.plot(model_motor_belt_6B_Rm1_No2_df['6B_Rm1_No2_extracted_datetime'], model_motor_belt_6B_Rm1_No2_df['6B_Rm1_No2_mae'], label='6B_Rm1_No2')
+plt.plot(model_motor_belt_6B_Rm2_No1_df['6B_Rm2_No1_extracted_datetime'], model_motor_belt_6B_Rm2_No1_df['6B_Rm2_No1_mae'], label='6B_Rm2_No1')
+plt.plot(model_motor_belt_6B_Rm2_No2_df['6B_Rm2_No2_extracted_datetime'], model_motor_belt_6B_Rm2_No2_df['6B_Rm2_No2_mae'], label='6B_Rm2_No2')
+plt.xlabel('Datetime')
+plt.ylabel('MAE')
+plt.grid()
+plt.tight_layout()
+plt.title('Model Prediction - Motor Belt')
+plt.legend()
+
 plt.show()

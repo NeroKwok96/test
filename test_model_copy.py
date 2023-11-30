@@ -84,8 +84,8 @@ fan_csv_path_to_checked = set()
 motor_csv_path_to_checked = set()
 
 # Limited date range:
-customized_period_from = '20231018_000000'
-customized_period_to = '20231118_000000'
+customized_period_from = '20230821_000000'
+customized_period_to = '20231121_000000'
 
 # sensor_history_query = """
 # SELECT node_id, location_name
@@ -236,14 +236,17 @@ def preprocessing(csv_path_list):
         motor_record_count = cursor_xswh.fetchone()
 
         computation_type = None
-        if sensor_id in fan_sensor_id_validation:
-            # for result in temp_query_result:
-            if (computation_type != 'model' or computation_type == None) and fan_record_count[0] != 5:
-                fan_dataset_prediction(balancing_actual_data, misalignment_actual_data, belt_actual_data, flow_actual_data, bearing_actual_data, file_name, sensor_id)
-        elif sensor_id in motor_sensor_id_validation:
-            # for result in temp_query_result:
-            if (computation_type != 'model' or computation_type == None) and motor_record_count[0] != 4:
-                motor_dataset_prediction(balancing_actual_data, misalignment_actual_data, belt_actual_data, bearing_actual_data, file_name, sensor_id)
+        try: 
+            if sensor_id in fan_sensor_id_validation:
+                # for result in temp_query_result:
+                if (computation_type != 'model' or computation_type == None) and fan_record_count[0] != 5:
+                    fan_dataset_prediction(balancing_actual_data, misalignment_actual_data, belt_actual_data, flow_actual_data, bearing_actual_data, file_name, sensor_id)
+            elif sensor_id in motor_sensor_id_validation:
+                # for result in temp_query_result:
+                if (computation_type != 'model' or computation_type == None) and motor_record_count[0] != 4:
+                    motor_dataset_prediction(balancing_actual_data, misalignment_actual_data, belt_actual_data, bearing_actual_data, file_name, sensor_id)
+        except:
+            print("empty file")
         print(f"{file_name} already predicted, skipping")
 
 
@@ -365,7 +368,6 @@ def motor_dataset_prediction(balancing_actual_data, misalignment_actual_data, be
             cursor_xswh.execute(insert_xswh_query, (int(sensor_id), sensor_location, machine_name, motor_belt_mae, motor_belt_machine_health, organization_sym, site_sym, file_name, 'belt', 'model'))
             cursor_xswh.execute(insert_xswh_query, (int(sensor_id), sensor_location, machine_name, motor_bearing_mae, motor_bearing_machine_health, organization_sym, site_sym, file_name, 'bearing', 'model'))
             conn_to_xswh.commit()
-
 
 preprocessing(fan_csv_paths_sorted)
 preprocessing(motor_csv_paths_sorted)
