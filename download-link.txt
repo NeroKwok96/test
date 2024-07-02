@@ -1,0 +1,1 @@
+https://nightly.link/teckyio/buyeasy-aberdeen-bike/workflows/godot-ci/main/windows.zip?h=766f3c8ba58965aa138775b5549f1d31e68fba69

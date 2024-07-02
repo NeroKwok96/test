@@ -1,0 +1,214 @@
+[gd_scene load_steps=19 format=3 uid="uid://bsjdi5n1kyc8y"]
+
+[ext_resource type="Script" path="res://main.gd" id="1_76cvn"]
+[ext_resource type="PackedScene" uid="uid://bt87p6yemry" path="res://bike.tscn" id="2_3uby0"]
+[ext_resource type="PackedScene" uid="uid://dsovbbkgdibfp" path="res://cyctrack/cyctrack.glb" id="2_eget0"]
+[ext_resource type="Texture2D" uid="uid://ud1x6jdeqq7h" path="res://sky_pano.png" id="4_xa8j5"]
+[ext_resource type="Script" path="res://websocket/WebSocketServer.gd" id="5_kdc2k"]
+[ext_resource type="Script" path="res://WebSocketHandler.gd" id="6_5tk4d"]
+[ext_resource type="PackedScene" uid="uid://i6ofis3iloi2" path="res://enemy.tscn" id="7_1ikg1"]
+[ext_resource type="Script" path="res://Sample.gd" id="8_tpkyy"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_rtuay"]
+panorama = ExtResource("4_xa8j5")
+
+[sub_resource type="Sky" id="Sky_sbj80"]
+sky_material = SubResource("PanoramaSkyMaterial_rtuay")
+
+[sub_resource type="Environment" id="Environment_y2aha"]
+background_mode = 2
+sky = SubResource("Sky_sbj80")
+fog_density = 0.0074
+fog_sky_affect = 0.216
+
+[sub_resource type="Curve3D" id="Curve3D_s8hqo"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 2.08165e-12, 2.08165e-12, -5.51, -0.926559, 9.48906e-05, -38.4754, 0.926559, -9.48906e-05, 38.4754, 2.08165e-12, 2.08165e-12, 110, -50.8917, 0.0318869, 0.266022, 50.8917, -0.0318869, -0.266022, 88.757, 2.5, 193.496, -1.07671, -0.00205994, 51.8935, 0, 0, 0, 178.216, 0.000698566, 101.727, 0, 0, 0, -0.300995, 0, -58.6317, 177.751, 0.000668049, -113.308, 43.287, 2.08165e-12, -0.096, -43.287, -2.08165e-12, 1.056, 89.82, 2.2, -204.141, 6.803, 2.08165e-12, -12.296, -6.803, 2.08165e-12, 12.296, 10.523, 0.7, -159.399, 1.896, -2.08165e-12, -28.062, -1.896, 2.08165e-12, 28.062, -0.058, 0.1, -115.408, 2.08165e-12, 2.08165e-12, 2.08165e-12, 0, 0, 0, 2.08165e-12, 2.08165e-12, -5.51),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 9
+
+[sub_resource type="Curve3D" id="Curve3D_xojla"]
+_data = {
+"points": PackedVector3Array(2.08165e-12, 6.7391, 0.043973, -2.08165e-12, -6.7391, -0.043973, 2.08165e-12, 5, -5, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_qjkos"]
+
+[sub_resource type="SystemFont" id="SystemFont_ylqig"]
+font_names = PackedStringArray("Impact")
+
+[sub_resource type="LabelSettings" id="LabelSettings_2pb2w"]
+font = SubResource("SystemFont_ylqig")
+font_size = 48
+outline_size = 10
+outline_color = Color(0.105882, 0.0784314, 0.392157, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_uppkw"]
+font = SubResource("SystemFont_ylqig")
+font_size = 96
+outline_size = 10
+outline_color = Color(0.105882, 0.0784314, 0.392157, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_eyo5o"]
+font = SubResource("SystemFont_ylqig")
+font_size = 180
+outline_size = 20
+outline_color = Color(0.105882, 0.0784314, 0.392157, 1)
+
+[node name="Node3D" type="Node3D"]
+script = ExtResource("1_76cvn")
+
+[node name="Node3D" type="Node3D" parent="."]
+
+[node name="cyctrack" parent="Node3D" instance=ExtResource("2_eget0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 2.08165e-12, 40)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_y2aha")
+
+[node name="WebSocketServer" type="Node" parent="."]
+script = ExtResource("5_kdc2k")
+
+[node name="WebSocketHandler" type="Node" parent="."]
+script = ExtResource("6_5tk4d")
+
+[node name="Timer" type="Timer" parent="."]
+one_shot = true
+
+[node name="BikePath" type="Path3D" parent="."]
+transform = Transform3D(-4.37114e-08, 3.48787e-16, 1, 3.48787e-16, 1, -3.48787e-16, -1, 3.48787e-16, -4.37114e-08, 9.145, 2, 86.755)
+curve = SubResource("Curve3D_s8hqo")
+
+[node name="BikeFollow" type="PathFollow3D" parent="BikePath"]
+transform = Transform3D(-1.0006, 0, 0, 0, 1.0018, 0, 0, 0, -1.00173, 2.08165e-12, 2.08165e-12, -5.51)
+rotation_mode = 4
+
+[node name="Bike" parent="BikePath/BikeFollow" instance=ExtResource("2_3uby0")]
+transform = Transform3D(-0.99827, 3.4819e-16, 8.73704e-08, 3.48183e-16, 0.998288, -3.48578e-16, -8.72715e-08, -3.4819e-16, -0.999401, 0, 0, 0)
+
+[node name="Path3D" type="Path3D" parent="BikePath/BikeFollow/Bike"]
+curve = SubResource("Curve3D_xojla")
+
+[node name="PathFollow3D" type="PathFollow3D" parent="BikePath/BikeFollow/Bike/Path3D"]
+transform = Transform3D(-0.999999, 0, -8.74227e-08, 0, 0.999999, 0, 8.74227e-08, 0, -0.999999, 2.00183e-12, 4.74247, -4.99917)
+progress = 0.257188
+rotation_mode = 1
+
+[node name="Camera3D" type="Camera3D" parent="BikePath/BikeFollow/Bike/Path3D/PathFollow3D"]
+transform = Transform3D(1.00113, -3.48757e-16, 3.48393e-16, 3.49182e-16, 0.999915, -3.48393e-16, -3.49182e-16, 3.48757e-16, 0.998872, 0, 0, 0)
+attributes = SubResource("CameraAttributesPractical_qjkos")
+v_offset = 1.386
+doppler_tracking = 1
+current = true
+fov = 98.9
+near = 0.249
+
+[node name="EnemyPath" type="Path3D" parent="."]
+transform = Transform3D(-4.37114e-08, 3.48787e-16, 1, 3.48787e-16, 1, -3.48787e-16, -1, 3.48787e-16, -4.37114e-08, 9.145, 2, 86.755)
+curve = SubResource("Curve3D_s8hqo")
+
+[node name="BikeFollow" type="PathFollow3D" parent="EnemyPath"]
+transform = Transform3D(-1.0006, 0, 0, 0, 1.0018, 0, 0, 0, -1.00173, 2.08165e-12, 2.08165e-12, -5.51)
+rotation_mode = 4
+
+[node name="Bike" parent="EnemyPath/BikeFollow" instance=ExtResource("7_1ikg1")]
+transform = Transform3D(-1, 3.48787e-16, 8.74228e-08, 3.48787e-16, 1, -3.48787e-16, -8.74228e-08, -3.48787e-16, -1, 0.779, 0.09, 0)
+
+[node name="EnemyPath2" type="Path3D" parent="."]
+transform = Transform3D(-4.37114e-08, 3.48787e-16, 1, 3.48787e-16, 1, -3.48787e-16, -1, 3.48787e-16, -4.37114e-08, 9.145, 2, 86.755)
+curve = SubResource("Curve3D_s8hqo")
+
+[node name="BikeFollow" type="PathFollow3D" parent="EnemyPath2"]
+transform = Transform3D(-1.0006, 0, 0, 0, 1.0018, 0, 0, 0, -1.00173, 2.08165e-12, 2.08165e-12, -5.51)
+rotation_mode = 4
+
+[node name="Bike" parent="EnemyPath2/BikeFollow" instance=ExtResource("7_1ikg1")]
+transform = Transform3D(-1, 3.48787e-16, 8.74228e-08, 3.48787e-16, 1, -3.48787e-16, -8.74228e-08, -3.48787e-16, -1, 1.56, 0.25, 0)
+
+[node name="Points" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -284.0
+offset_top = 15.0
+offset_right = -17.0
+offset_bottom = 78.0
+grow_horizontal = 0
+text = "Laps: 1/3"
+label_settings = SubResource("LabelSettings_2pb2w")
+horizontal_alignment = 2
+
+[node name="Time" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -76.0
+offset_right = 76.0
+offset_bottom = 121.0
+grow_horizontal = 2
+text = "60"
+label_settings = SubResource("LabelSettings_uppkw")
+horizontal_alignment = 1
+
+[node name="Lap" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -537.0
+offset_top = 451.0
+offset_right = 538.0
+offset_bottom = 894.0
+grow_horizontal = 2
+label_settings = SubResource("LabelSettings_eyo5o")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Countdown" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -537.0
+offset_top = 451.0
+offset_right = 538.0
+offset_bottom = 894.0
+grow_horizontal = 2
+label_settings = SubResource("LabelSettings_eyo5o")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Speed" type="Label" parent="."]
+offset_left = 18.0
+offset_top = 14.0
+offset_right = 250.0
+offset_bottom = 77.0
+text = "1. You
+2. Computer"
+label_settings = SubResource("LabelSettings_2pb2w")
+
+[node name="SpeedMeter" type="Label" parent="."]
+visible = false
+offset_left = 19.0
+offset_top = 93.0
+offset_right = 251.0
+offset_bottom = 156.0
+text = "0km/h
+"
+label_settings = SubResource("LabelSettings_2pb2w")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.00184721, -0.941482, -0.337058, -0.00515961, -0.337063, 0.941468, -0.999985, -1.36635e-09, -0.00548031, -16.524, 35.9167, 0)
+light_energy = 0.5
+shadow_enabled = true
+
+[node name="Node" type="Node" parent="."]
+script = ExtResource("8_tpkyy")
+
+[connection signal="_set_game_state" from="." to="WebSocketHandler" method="_set_game_state"]
+[connection signal="client_connected" from="WebSocketServer" to="WebSocketHandler" method="_on_web_socket_server_client_connected"]
+[connection signal="client_disconnected" from="WebSocketServer" to="WebSocketHandler" method="_on_web_socket_server_client_disconnected"]
+[connection signal="message_received" from="WebSocketServer" to="WebSocketHandler" method="_on_web_socket_server_message_received"]
+[connection signal="game_start" from="WebSocketHandler" to="." method="_game_start"]
+[connection signal="timeout" from="Timer" to="." method="_tick"]
